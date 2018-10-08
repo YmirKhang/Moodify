@@ -18,6 +18,6 @@ libraryDependencies ++= Seq(
   "com.typesafe"                 %  "config"                    % "1.3.2"
 )
 
-mainClass in (Compile, packageBin) := Some("moodify.app.Boot")
+mainClass in (Compile, packageBin) := Some("moodify.api.Boot")
 
-mainClass in (Compile, run) := Some("moodify.app.Boot")
+mainClass in (Compile, run) := Some("moodify.api.Boot")

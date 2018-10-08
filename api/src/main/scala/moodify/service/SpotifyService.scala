@@ -30,7 +30,6 @@ class SpotifyService extends Config {
   def authenticate(userId: String, code: String): Boolean = {
     val redisAccessTokenKey = s"user:$userId:token:access"
     val redisRefreshTokenKey = s"user:$userId:token:refresh"
-    val refreshTokenTTL = 30 * 24 * 60 * 60 // 30 days.
 
     try {
       // Check if access token exists.
@@ -52,6 +51,7 @@ class SpotifyService extends Config {
         val accessToken = credentials.getAccessToken
         val refreshToken = credentials.getRefreshToken
         val accessTokenTTL = credentials.getExpiresIn
+        val refreshTokenTTL = 30 * 24 * 60 * 60 // 30 days.
 
         // Update access token and refresh token.
         spotifyApi.setAccessToken(accessToken)

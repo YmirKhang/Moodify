@@ -1,4 +1,4 @@
-package moodify.app
+package moodify.api
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
