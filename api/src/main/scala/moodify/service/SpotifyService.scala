@@ -12,11 +12,6 @@ import moodify.Config
 class SpotifyService extends Config {
 
   /**
-    * List of necessary permissions.
-    */
-  private val scope = "user-read-recently-played, playlist-modify-public, playlist-modify-private"
-
-  /**
     * Spotify API wrapper instance.
     */
   private val spotifyApi = new SpotifyApi.Builder()
@@ -33,23 +28,37 @@ class SpotifyService extends Config {
     * @return Success.
     */
   def authenticate(userId: String, code: String): Boolean = {
+    val redisAccessTokenKey = s"user:$userId:token:access"
+    val redisRefreshTokenKey = s"user:$userId:token:refresh"
+    val refreshTokenTTL = 30 * 24 * 60 * 60 // 30 days.
+
     try {
-      val authorizationCodeCredentials = spotifyApi.authorizationCode(code)
-        .build
-        .execute
+      // Check if access token exists.
+      val maybeAccessToken = RedisService.get(redisAccessTokenKey)
+      if (maybeAccessToken.isDefined) {
+        val accessToken = maybeAccessToken.get
+        spotifyApi.setAccessToken(accessToken)
+      }
+      // Access token does not exist. Check if refresh token exists.
+      else {
+        val maybeRefreshToken = RedisService.get(redisRefreshTokenKey)
+        if (maybeRefreshToken.isDefined) {
+          val refreshToken = maybeRefreshToken.get
+          spotifyApi.setRefreshToken(refreshToken)
+        }
 
-      val accessToken = authorizationCodeCredentials.getAccessToken
-      spotifyApi.setAccessToken(accessToken)
+        // Get new credentials from Spotify.
+        val credentials = spotifyApi.authorizationCode(code).build.execute
+        val accessToken = credentials.getAccessToken
+        val refreshToken = credentials.getRefreshToken
+        val accessTokenTTL = credentials.getExpiresIn
 
-      val refreshToken = authorizationCodeCredentials.getRefreshToken
-      spotifyApi.setRefreshToken(refreshToken)
-
-      val redisAccessTokenKey = s"user:$userId:token:access"
-      val redisRefreshTokenKey = s"user:$userId:token:refresh"
-      val ttl = 30 * 24 * 60 * 60 // 30 days.
-
-      RedisService.set(redisAccessTokenKey, accessToken, ttl)
-      RedisService.set(redisRefreshTokenKey, refreshToken, ttl)
+        // Update access token and refresh token.
+        spotifyApi.setAccessToken(accessToken)
+        spotifyApi.setRefreshToken(refreshToken)
+        RedisService.set(redisAccessTokenKey, accessToken, accessTokenTTL)
+        RedisService.set(redisRefreshTokenKey, refreshToken, refreshTokenTTL)
+      }
 
       true
     }
