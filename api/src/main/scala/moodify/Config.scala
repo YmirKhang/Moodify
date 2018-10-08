@@ -2,7 +2,7 @@ package moodify
 
 import com.typesafe.config.ConfigFactory
 
-object Config {
+trait Config {
 
   /**
     * Environment that app is running on.
@@ -21,5 +21,45 @@ object Config {
     * Load config file.
     */
   private val config: com.typesafe.config.Config = ConfigFactory.load(configFile)
+
+  /**
+    * Client ID for Spotify API access.
+    */
+  val SPOTIFY_CLIENT_ID: String = System.getenv("SPOTIFY_CLIENT_ID")
+
+  /**
+    * Client Secret for Spotify API access.
+    */
+  val SPOTIFY_CLIENT_SECRET: String = System.getenv("SPOTIFY_CLIENT_SECRET")
+
+  /**
+    * URI that Spotify redirects user after authentication process.
+    */
+  val SPOTIFY_REDIRECT_URI: String = System.getenv("SPOTIFY_REDIRECT_URI")
+
+  /**
+    * Redis host.
+    */
+  val REDIS_HOST: String = config.getString("REDIS.HOST")
+
+  /**
+    * Redis port.
+    */
+  val REDIS_PORT: Int = config.getInt("REDIS.PORT")
+
+  /**
+    * Redis password.
+    */
+  val REDIS_PASSWORD: String = config.getString("REDIS.PASS")
+
+  /**
+    * HTTP interface for Akka.
+    */
+  val HTTP_INTERFACE: String = config.getString("HTTP.INTERFACE")
+
+  /**
+    * HTTP port for Akka.
+    */
+  val HTTP_PORT: Int = config.getInt("HTTP.PORT")
 
 }
