@@ -9,7 +9,7 @@ import moodify.service.{RedisService, SpotifyService}
   * - Previously authenticated users can be authorized with stored tokens.
   * - New users are authenticated with Spotify code.
   */
-class Identification {
+object Identification {
 
   /**
     * Get Redis key for access token of given user.
