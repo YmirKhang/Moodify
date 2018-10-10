@@ -87,7 +87,7 @@ object Identification {
     val accessToken = credentials.getAccessToken
     val refreshToken = credentials.getRefreshToken
     val accessTokenTTL = credentials.getExpiresIn
-    val refreshTokenTTL = 30 * 24 * 60 * 60 // 30 days.
+    val refreshTokenTTL = 30 * 86400 // 30 days.
 
     try {
       RedisService.set(accessTokenKey(userId), accessToken, accessTokenTTL)

@@ -86,48 +86,24 @@ class SpotifyService extends Config {
     * Get audio features for given track id list.
     *
     * @param trackIdList Track id list.
-    * @return Audio features.
+    * @return Tracks' audio features.
     */
   def getAudioFeatures(trackIdList: List[String]): List[TrackFeatures] = {
 
     // Number of tracks for a single request is limited by Spotify API.
     val requestLimit = 100
-
-    // Fetch audio features from Redis, if available.
-    val redisTrendlineList = trackIdList.flatMap { trackId =>
-      val redisKey = s"track:$trackId:audio"
-      val maybeAudioFeatures = RedisService.hgetall(redisKey)
-      if (maybeAudioFeatures.isDefined) {
-        val audioFeatures = maybeAudioFeatures.get
-        val trendline = Trendline(
-          audioFeatures("Acousticness").toDouble,
-          audioFeatures("Instrumentalness").toDouble,
-          audioFeatures("Speechiness").toDouble,
-          audioFeatures("Danceability").toDouble,
-          audioFeatures("Liveness").toDouble,
-          audioFeatures("Energy").toDouble,
-          audioFeatures("Valence").toDouble
-        )
-        List(TrackFeatures(trackId, trendline))
-      }
-      // Audio features for current track is not available in Redis.
-      else List()
-    }
-
-    // Separate tracks with no audio feature data.
-    val redisTrackIdList = redisTrendlineList.map(track => track.trackId)
-    val newTrackIdList = trackIdList.diff(redisTrackIdList)
-    val trackIdListGroups = newTrackIdList.grouped(requestLimit)
+    val trackIdListGroups = trackIdList.grouped(requestLimit)
 
     // Get those tracks' audio features from Spotify.
-    val spotifyAudioFeatures = trackIdListGroups.flatMap { idList =>
+    val audioFeatures = trackIdListGroups.flatMap { idList =>
       val commaSeparatedIdList = idList.mkString(",")
       spotifyApi.getAudioFeaturesForSeveralTracks()
         .ids(commaSeparatedIdList)
         .build.execute
     }.toList
 
-    val spotifyTrendlineList = spotifyAudioFeatures.map { audioFeatures =>
+    // Create each track's trendline.
+    val trendlineList = audioFeatures.map { audioFeatures =>
       val trackId = audioFeatures.getId
       val trendline = Trendline(
         audioFeatures.getAcousticness.toDouble,
@@ -142,9 +118,7 @@ class SpotifyService extends Config {
       TrackFeatures(trackId, trendline)
     }
 
-    // TODO: Save to Redis.
-
-    redisTrendlineList ++ spotifyTrendlineList
+    trendlineList
   }
 
 }

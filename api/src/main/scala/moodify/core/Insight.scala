@@ -1,6 +1,7 @@
 package moodify.core
 
-import moodify.model.Trendline
+import moodify.helper.Converter
+import moodify.model.{TrackFeatures, Trendline}
 import moodify.service.{RedisService, SpotifyService}
 
 /**
@@ -12,38 +13,78 @@ import moodify.service.{RedisService, SpotifyService}
 class Insight(spotifyService: SpotifyService, userId: String) {
 
   /**
+    * Time to live for user's trendline data in Redis.
+    */
+  private val userTrendlineTTL = 5 * 60 // 5 minutes.
+
+  /**
+    * Time to live for track's trendline data in Redis.
+    */
+  private val trackFeaturesTTL = 30 * 86400 // 30 days.
+
+  /**
     * Creates trendline for authenticated user using last played `numTracks` many tracks.
     *
     * @param numTracks Recently played track count to be used.
     * @return User's Trendline.
     */
-  def trendline(numTracks: Int): Trendline = {
+  def getTrendline(numTracks: Int): Trendline = {
     val redisTrendlineKey = s"user:$userId:trendline:$numTracks"
-    val redisTTL = 5 * 60 // 5 minutes.
 
     // Get specified trendline from Redis.
     val maybeTrendline = RedisService.hgetall(redisTrendlineKey)
     if (maybeTrendline.isDefined) {
-      val trendline = maybeTrendline.get
-
-      return Trendline(
-        trendline("Acousticness").toDouble,
-        trendline("Instrumentalness").toDouble,
-        trendline("Speechiness").toDouble,
-        trendline("Danceability").toDouble,
-        trendline("Liveness").toDouble,
-        trendline("Energy").toDouble,
-        trendline("Valence").toDouble
-      )
+      val trendline = Converter.mapToTrendline(maybeTrendline.get)
+      return trendline
     }
 
     // Redis does not hold required data. Generate user's trendline.
     val recentTracks = spotifyService.getRecentTracks(numTracks)
     val recentTracksIdList = recentTracks.map(track => track.getTrack.getId).toList
-    val trackFeatureList = spotifyService.getAudioFeatures(recentTracksIdList)
+    val trackFeatureList = getAudioFeatures(recentTracksIdList)
 
-    // TODO: Calculate mean of `trackFeatureList`.
+    // TODO: Calculate mean of `trendlineList`.
+    val trendlineList = trackFeatureList.map(track => track.trendline)
 
+  }
+
+  /**
+    * Get audio features for given track id list.
+    *
+    * First check Redis for given track ids. Then, query Spotify API for remaining tracks.
+    *
+    * @param trackIdList Track id list.
+    * @return Tracks' audio features.
+    */
+  private def getAudioFeatures(trackIdList: List[String]): List[TrackFeatures] = {
+    // Fetch audio features from Redis, if available.
+    val redisTrackFeaturesList = trackIdList.flatMap { trackId =>
+      val redisKey = s"track:$trackId:audio"
+      val maybeAudioFeatures = RedisService.hgetall(redisKey)
+      if (maybeAudioFeatures.isDefined) {
+        val audioFeatures = maybeAudioFeatures.get
+        val trendline = Converter.mapToTrendline(audioFeatures)
+        List(TrackFeatures(trackId, trendline))
+      }
+      // Audio features for current track is not available in Redis.
+      else List()
+    }
+
+    // Separate tracks with no audio feature data.
+    val redisTrackIdList = redisTrackFeaturesList.map(track => track.trackId)
+    val newTrackIdList = trackIdList.diff(redisTrackIdList)
+
+    // Get new tracks' audio features from Spotify.
+    val spotifyTrackFeatureList = spotifyService.getAudioFeatures(newTrackIdList)
+
+    // Save new tracks' audio features to Redis for future reference.
+    spotifyTrackFeatureList.foreach { trackFeatures =>
+      val trendlineMap = Converter.trendlineToMap(trackFeatures.trendline)
+      RedisService.hmset(trackFeatures.trackId, trendlineMap, trackFeaturesTTL)
+    }
+
+    // TODO: This concatenation does not preserve the order of `trackIdList`. Fix this.
+    redisTrackFeaturesList ++ spotifyTrackFeatureList
   }
 
 }

@@ -1,10 +1,10 @@
 package moodify.model
 
-case class Trendline(Acousticness: Double,
-                     Instrumentalness: Double,
-                     Speechiness: Double,
-                     Danceability: Double,
-                     Liveness: Double,
-                     Energy: Double,
-                     Valence: Double
+case class Trendline(acousticness: Double,
+                     instrumentalness: Double,
+                     speechiness: Double,
+                     danceability: Double,
+                     liveness: Double,
+                     energy: Double,
+                     valence: Double
                     )
