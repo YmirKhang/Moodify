@@ -43,9 +43,26 @@ class Insight(spotifyService: SpotifyService, userId: String) {
     val recentTracksIdList = recentTracks.map(track => track.getTrack.getId).toList
     val trackFeatureList = getAudioFeatures(recentTracksIdList)
 
-    // TODO: Calculate mean of `trendlineList`.
     val trendlineList = trackFeatureList.map(track => track.trendline)
+    val zeroTrendline = Trendline(0, 0, 0, 0, 0, 0, 0)
 
+    // Take the average of tracks' trendline.
+    val avgTrendline = trendlineList.fold(zeroTrendline) { (accum, trendline) =>
+      Trendline(
+        accum.acousticness + trendline.acousticness / numTracks,
+        accum.instrumentalness + trendline.instrumentalness / numTracks,
+        accum.speechiness + trendline.speechiness / numTracks,
+        accum.danceability + trendline.danceability / numTracks,
+        accum.liveness + trendline.liveness / numTracks,
+        accum.energy + trendline.energy / numTracks,
+        accum.valence + trendline.valence / numTracks
+      )
+    }
+
+    // Save calculated trendline to Redis.
+    RedisService.hmset(redisTrendlineKey, Converter.trendlineToMap(avgTrendline), userTrendlineTTL)
+
+    avgTrendline
   }
 
   /**
