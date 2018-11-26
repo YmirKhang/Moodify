@@ -1,10 +1,16 @@
 package moodify.model
 
-case class Trendline(acousticness: Double,
-                     instrumentalness: Double,
-                     speechiness: Double,
-                     danceability: Double,
-                     liveness: Double,
-                     energy: Double,
-                     valence: Double
+import spray.json._
+
+case class Trendline(acousticness: Double = 0,
+                     instrumentalness: Double = 0,
+                     speechiness: Double = 0,
+                     danceability: Double = 0,
+                     liveness: Double = 0,
+                     energy: Double = 0,
+                     valence: Double = 0
                     )
+
+object TrendlineProtocol extends DefaultJsonProtocol {
+  implicit val trendlineFormat: RootJsonFormat[Trendline] = jsonFormat7(Trendline)
+}

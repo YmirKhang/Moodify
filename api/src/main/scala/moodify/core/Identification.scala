@@ -59,18 +59,20 @@ object Identification {
 
     // Check if access token exists.
     val maybeRedisAccessToken = RedisService.get(accessTokenKey(userId))
-    val maybeAccessToken = if (maybeRedisAccessToken.isDefined) {
-      maybeRedisAccessToken
-    }
-    // Access token does not exist. Check if refresh token exists.
-    else {
-      val maybeRefreshToken = RedisService.get(refreshTokenKey(userId))
-      if (maybeRefreshToken.isDefined) {
-        val refreshToken = maybeRefreshToken.get
-        val credentials = spotify.refreshAccessToken(refreshToken)
-        val success = updateCredentials(userId, credentials)
-        if (success) Some(credentials.getAccessToken) else None
-      } else None
+    val maybeAccessToken = {
+      if (maybeRedisAccessToken.isDefined) {
+        maybeRedisAccessToken
+      }
+      else {
+        // Access token does not exist. Check if refresh token exists.
+        val maybeRefreshToken = RedisService.get(refreshTokenKey(userId))
+        if (maybeRefreshToken.isDefined) {
+          val refreshToken = maybeRefreshToken.get
+          val credentials = spotify.refreshAccessToken(refreshToken)
+          val success = updateCredentials(userId, credentials)
+          if (success) Some(credentials.getAccessToken) else None
+        } else None
+      }
     }
 
     maybeAccessToken

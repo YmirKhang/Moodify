@@ -2,6 +2,7 @@ package moodify.service
 
 import java.net.URI
 
+import com.typesafe.scalalogging.LazyLogging
 import com.wrapper.spotify.SpotifyApi
 import com.wrapper.spotify.model_objects.credentials.AuthorizationCodeCredentials
 import com.wrapper.spotify.model_objects.specification.PlayHistory
@@ -11,7 +12,12 @@ import moodify.model.{TrackFeatures, Trendline}
 /**
   * Communicates with Spotify API for authenticated user.
   */
-class SpotifyService extends Config {
+class SpotifyService extends Config with LazyLogging {
+
+  /**
+    * Logging interface.
+    */
+  //override lazy val logger: Logger = Logger[SpotifyService]
 
   /**
     * Spotify API wrapper instance.
@@ -37,7 +43,9 @@ class SpotifyService extends Config {
       Some(credentials)
     }
     catch {
-      case _: Throwable =>
+      case exception: Throwable =>
+        //logger.warn(exception.getMessage)
+        println(exception.getMessage)
         None
     }
   }
@@ -96,9 +104,7 @@ class SpotifyService extends Config {
 
     // Get those tracks' audio features from Spotify.
     val audioFeatures = trackIdListGroups.flatMap { idList =>
-      val commaSeparatedIdList = idList.mkString(",")
-      spotifyApi.getAudioFeaturesForSeveralTracks()
-        .ids(commaSeparatedIdList)
+      spotifyApi.getAudioFeaturesForSeveralTracks(idList: _*)
         .build.execute
     }.toList
 

@@ -7,7 +7,9 @@ import akka.stream.ActorMaterializer
 import moodify.Config
 import moodify.core.{Identification, Insight}
 import moodify.model.Response
+import moodify.model.TrendlineProtocol._
 import moodify.service.SpotifyService
+import spray.json._
 
 import scala.concurrent.ExecutionContextExecutor
 
@@ -17,57 +19,66 @@ object Boot extends Config {
   implicit val executor: ExecutionContextExecutor = system.dispatcher
   implicit val materializer: ActorMaterializer = ActorMaterializer()
 
-  private val spotify = new SpotifyService()
-
   def main(args: Array[String]): Unit = {
 
     val routes = {
       /*
-        * GET /
-        * Root endpoint.
-        */
+       * GET /
+       * Root endpoint.
+       */
       path("") {
         get {
-          val response = new Response(success = true)
-          complete(response.toJson)
+          complete(Response.success())
         }
       } ~
         /*
-          * GET /health
-          * Get heartbeat of API.
-          */
+         * GET /health
+         * Get heartbeat of API.
+         */
         path("health") {
           pathEndOrSingleSlash {
             get {
-              val response = new Response(success = true)
-              complete(response.toJson)
+              complete(Response.success())
             }
           }
         } ~
         /*
-          * GET /authenticate/user/{user-id}/code/{code}
-          * Authenticate given user with given Spotify code.
-          */
+         * GET /authenticate/user/{user-id}/code/{code}
+         * Authenticate given user with given Spotify code.
+         */
         pathPrefix("authenticate" / "user" / Segment / "code" / Segment) { (userId: String, code: String) =>
           pathEndOrSingleSlash {
             get {
               val success = Identification.authenticate(userId, code)
-              val response = new Response(success)
-              complete(response.toJson)
+              complete(Response.json(success))
             }
           }
         } ~
         /*
-          * GET /user/{user-id}/trendline/{num-tracks}
-          * Get trendline for given user using given number of tracks.
-          */
-        pathPrefix("user" / Segment / "trendline" / Segment) { (userId: String, numTracks: String) =>
-          pathEndOrSingleSlash {
-            get {
-              val insight = new Insight(spotify, userId)
-              val trendline = insight.getTrendline(numTracks.toInt)
-              val response = new Response(success = true, data = trendline)
-              complete(response.toJson)
+         * GET /user/{user-id}
+         * Endpoints with Authorization.
+         */
+        pathPrefix("user" / Segment) { userId: String =>
+          val maybeAccessToken = Identification.authorize(userId)
+          validate(maybeAccessToken.isDefined, Response.error("User is not authorized.")) {
+            val accessToken = maybeAccessToken.get
+            val spotify = new SpotifyService
+            spotify.authorize(accessToken)
+            /*
+             * GET /user/{user-id}/trendline/{num-tracks}
+             * Get trendline for given user using given number of tracks.
+             */
+            pathPrefix("trendline" / Segment) { numTracksString: String =>
+              pathEndOrSingleSlash {
+                get {
+                  val numTracks = numTracksString.toInt
+                  validate(numTracks <= 50, Response.json(success = false, message = "Limit is 50 songs.")) {
+                    val insight = new Insight(spotify, userId)
+                    val trendline = insight.getTrendline(numTracks)
+                    complete(Response.json(success = true, data = trendline.toJson))
+                  }
+                }
+              }
             }
           }
         }

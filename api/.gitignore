@@ -1,8 +1,9 @@
 target/
 project/project
-project/target
 .idea/
 .idea_modules/
 .DS_Store
 
+/src/main/scala/local/
 /src/main/resources/prod.conf
+/.env
