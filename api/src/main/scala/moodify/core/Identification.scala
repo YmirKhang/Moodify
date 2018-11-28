@@ -55,8 +55,6 @@ object Identification {
     * @return Access key if exists.
     */
   def authorize(userId: String): Option[String] = {
-    val spotify = new SpotifyService
-
     // Check if access token exists.
     val maybeRedisAccessToken = RedisService.get(accessTokenKey(userId))
     val maybeAccessToken = {
@@ -67,6 +65,7 @@ object Identification {
         // Access token does not exist. Check if refresh token exists.
         val maybeRefreshToken = RedisService.get(refreshTokenKey(userId))
         if (maybeRefreshToken.isDefined) {
+          val spotify = new SpotifyService
           val refreshToken = maybeRefreshToken.get
           val credentials = spotify.refreshAccessToken(refreshToken)
           val success = updateCredentials(userId, credentials)
@@ -97,7 +96,7 @@ object Identification {
       true
     }
     catch {
-      case _: Throwable => false
+      case exception: Throwable => false
     }
   }
 

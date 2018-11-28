@@ -68,10 +68,21 @@ class SpotifyService extends Config with LazyLogging {
   def refreshAccessToken(refreshToken: String): AuthorizationCodeCredentials = {
     spotifyApi.setRefreshToken(refreshToken)
     val credentials = spotifyApi.authorizationCodeRefresh.build.execute
-    spotifyApi.setAccessToken(credentials.getAccessToken)
-    spotifyApi.setRefreshToken(credentials.getRefreshToken)
 
-    credentials
+    val credentialsRefreshToken = credentials.getRefreshToken
+    val newRefreshToken = if (credentialsRefreshToken != null) credentialsRefreshToken else refreshToken
+    val newAccessToken = credentials.getAccessToken
+
+    spotifyApi.setAccessToken(newAccessToken)
+    spotifyApi.setRefreshToken(newRefreshToken)
+
+    val renewedCredentials = new AuthorizationCodeCredentials.Builder()
+      .setAccessToken(newAccessToken)
+      .setRefreshToken(newRefreshToken)
+      .setExpiresIn(credentials.getExpiresIn)
+      .build()
+
+    renewedCredentials
   }
 
   /**
