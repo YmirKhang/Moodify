@@ -1,5 +1,6 @@
 package moodify.core
 
+import com.typesafe.scalalogging.LazyLogging
 import com.wrapper.spotify.model_objects.credentials.AuthorizationCodeCredentials
 import moodify.service.{RedisService, SpotifyService}
 
@@ -9,7 +10,7 @@ import moodify.service.{RedisService, SpotifyService}
   * - Previously authenticated users can be authorized with stored tokens.
   * - New users are authenticated with Spotify code.
   */
-object Identification {
+object Identification extends LazyLogging {
 
   /**
     * Get Redis key for access token of given user.
@@ -96,7 +97,9 @@ object Identification {
       true
     }
     catch {
-      case exception: Throwable => false
+      case exception: Throwable =>
+        logger.error(exception.getMessage)
+        false
     }
   }
 

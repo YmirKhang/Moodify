@@ -15,11 +15,6 @@ import moodify.model.{TrackFeatures, Trendline}
 class SpotifyService extends Config with LazyLogging {
 
   /**
-    * Logging interface.
-    */
-  //override lazy val logger: Logger = Logger[SpotifyService]
-
-  /**
     * Spotify API wrapper instance.
     */
   private val spotifyApi = new SpotifyApi.Builder()
@@ -44,8 +39,7 @@ class SpotifyService extends Config with LazyLogging {
     }
     catch {
       case exception: Throwable =>
-        //logger.warn(exception.getMessage)
-        println(exception.getMessage)
+        logger.error(exception.getMessage)
         None
     }
   }
