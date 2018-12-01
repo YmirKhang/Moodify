@@ -14,7 +14,7 @@ trait Config {
     */
   private val configFile = ENV match {
     case "PROD" => "prod.conf"
-    case "TEST" => "test.conf"
+    case "TEST" | _ => "test.conf"
   }
 
   /**

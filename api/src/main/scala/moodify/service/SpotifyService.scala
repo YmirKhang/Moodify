@@ -5,9 +5,9 @@ import java.net.URI
 import com.typesafe.scalalogging.LazyLogging
 import com.wrapper.spotify.SpotifyApi
 import com.wrapper.spotify.model_objects.credentials.AuthorizationCodeCredentials
-import com.wrapper.spotify.model_objects.specification.PlayHistory
+import com.wrapper.spotify.model_objects.specification.{Artist, PlayHistory, Track, TrackSimplified}
 import moodify.Config
-import moodify.model.{TrackFeatures, Trendline}
+import moodify.model.{TimeRange, TrackFeatures, Trendline}
 
 /**
   * Communicates with Spotify API for authenticated user.
@@ -80,22 +80,6 @@ class SpotifyService extends Config with LazyLogging {
   }
 
   /**
-    * Get recent tracks of current user.
-    *
-    * @param limit Maximum number of tracks to return.
-    * @return Recent tracks.
-    */
-  def getRecentTracks(limit: Int): Array[PlayHistory] = {
-    val recentTracks = spotifyApi.getCurrentUsersRecentlyPlayedTracks
-      .limit(limit)
-      .build
-      .execute
-      .getItems
-
-    recentTracks
-  }
-
-  /**
     * Get audio features for given track id list.
     *
     * @param trackIdList Track id list.
@@ -130,6 +114,94 @@ class SpotifyService extends Config with LazyLogging {
     }
 
     trendlineList
+  }
+
+  /**
+    * Get recent tracks of current user.
+    *
+    * @param limit Maximum number of tracks to return.
+    * @return Recent tracks.
+    */
+  def getRecentTracks(limit: Int): Array[PlayHistory] = {
+    val recentTracks = spotifyApi
+      .getCurrentUsersRecentlyPlayedTracks
+      .limit(limit)
+      .build
+      .execute
+      .getItems
+
+    recentTracks
+  }
+
+  /**
+    * Get top artists for current user.
+    *
+    * @param timeRange Time range for operation.
+    * @param limit     Number of artists.
+    * @return Top artists.
+    */
+  def getTopArtists(timeRange: TimeRange.Value, limit: Int): Array[Artist] = {
+    val topArtists = spotifyApi
+      .getUsersTopArtists
+      .limit(limit)
+      .time_range(timeRange.toString)
+      .build
+      .execute
+      .getItems
+
+    topArtists
+  }
+
+  /**
+    * Get top tracks for current user.
+    *
+    * @param timeRange Time range for operation.
+    * @param limit     Number of tracks.
+    * @return Top tracks.
+    */
+  def getTopTracks(timeRange: TimeRange.Value, limit: Int): Array[Track] = {
+    val topTracks = spotifyApi
+      .getUsersTopTracks
+      .limit(limit)
+      .time_range(timeRange.toString)
+      .build
+      .execute
+      .getItems
+
+    topTracks
+  }
+
+  /**
+    * Get recommendations for given seeds and audio features.
+    *
+    * @param seedArtists Comma separated list of artists ids.
+    * @param seedTracks  Comma separated list of track ids.
+    * @param limit       Number of tracks to recommend.
+    * @return
+    */
+  def getRecommendations(seedArtists: String,
+                         seedTracks: String,
+                         limit: Int,
+                         acousticness: Double = -1,
+                         instrumentalness: Double = -1,
+                         speechiness: Double = -1,
+                         danceability: Double = -1,
+                         liveness: Double = -1,
+                         energy: Double = -1,
+                         valence: Double = -1): Array[TrackSimplified] = {
+
+    var request = spotifyApi
+      .getRecommendations
+      .limit(limit)
+      .seed_artists(seedArtists)
+      .seed_tracks(seedTracks)
+
+    val recommendations = request
+      .build
+      .execute
+      .getTracks
+
+    recommendations
   }
 
 }
