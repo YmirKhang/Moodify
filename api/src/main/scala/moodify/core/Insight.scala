@@ -1,8 +1,8 @@
 package moodify.core
 
 import moodify.helper.Converter
-import moodify.model.{SimpleArtist, TimeRange, TrackFeatures, Trendline}
-import moodify.repository.ArtistRepository
+import moodify.model._
+import moodify.repository.{ArtistRepository, TrackRepository}
 import moodify.service.{RedisService, SpotifyService}
 
 /**
@@ -53,6 +53,37 @@ class Insight(spotifyService: SpotifyService, userId: String) {
 
 
     topSimpleArtists
+  }
+
+  /**
+    * Get top tracks of current user.
+    *
+    * @param timeRange Time range for operation.
+    * @param limit     Number of tracks.
+    * @return Top tracks.
+    */
+  def getTopTracks(timeRange: TimeRange.Value, limit: Int): List[SimpleTrack] = {
+    val userRedisKey = s"user:$userId:top:track:$timeRange"
+
+    // Get user's top track id list from Redis. If size is enough get track data and return.
+    val maybeTopTrackIdList = RedisService.lrange(userRedisKey, size = limit)
+    if (maybeTopTrackIdList.isDefined) {
+      val topTrackIdList = maybeTopTrackIdList.get
+        .map(maybeTrackId => maybeTrackId.getOrElse(""))
+        .filter(trackId => trackId.nonEmpty)
+
+      if (topTrackIdList.length == limit) {
+        val simpleTrackList = topTrackIdList.map(trackId => TrackRepository.getSimpleTrack(trackId))
+        return simpleTrackList
+      }
+    }
+
+    // Redis does not hold required data. Get top tracks from Spotify.
+    val topTracks = spotifyService.getTopTracks(timeRange, limit).toList
+    val topSimpleTracks = topTracks.map(track => Converter.trackToSimpleTrack(track))
+    topSimpleTracks.foreach(simpleTrack => TrackRepository.saveSimpleTrack(simpleTrack))
+
+    topSimpleTracks
   }
 
   /**

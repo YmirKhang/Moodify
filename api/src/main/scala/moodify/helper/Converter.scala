@@ -1,9 +1,20 @@
 package moodify.helper
 
-import com.wrapper.spotify.model_objects.specification.Artist
-import moodify.model.{SimpleArtist, Trendline}
+import com.wrapper.spotify.model_objects.specification.{Artist, ArtistSimplified, Track}
+import moodify.model.{SimpleArtist, SimpleTrack, Trendline}
+import moodify.repository.ArtistRepository
 
 object Converter {
+
+  /**
+    * Separates the list items during serialization.
+    */
+  private val listSeparator = ","
+
+  /**
+    * Default string for fields that are not available.
+    */
+  private val notAvailable = "N/A"
 
   /**
     * Convert given Trendline object to Map.
@@ -80,6 +91,65 @@ object Converter {
       artist.getId,
       artist.getName,
       artist.getImages.head.getUrl
+    )
+  }
+
+  /**
+    * Convert given ArtistSimplified object to SimpleArtist object.
+    *
+    * @param artist ArtistSimplified
+    * @return SimpleArtist
+    */
+  def artistSimplifiedToSimpleArtist(artist: ArtistSimplified): SimpleArtist = {
+    SimpleArtist(
+      artist.getId,
+      artist.getName,
+      notAvailable
+    )
+  }
+
+  /**
+    * Convert given SimpleTrack object to Map.
+    *
+    * @param simpleTrack SimpleTrack
+    * @return Map[String, String]
+    */
+  def simpleTrackToMap(simpleTrack: SimpleTrack): Map[String, String] = {
+    Map(
+      "id" -> simpleTrack.id,
+      "name" -> simpleTrack.name,
+      "imageUrl" -> simpleTrack.imageUrl,
+      "artistIdList" -> simpleTrack.artists.map(artist => artist.id).mkString(listSeparator)
+    )
+  }
+
+  /**
+    * Convert given Map to SimpleTrack object.
+    *
+    * @param map Map[String, String]
+    * @return SimpleTrack
+    */
+  def mapToSimpleTrack(map: Map[String, String]): SimpleTrack = {
+    SimpleTrack(
+      map("id"),
+      map("name"),
+      map("imageUrl"),
+      map("artistIdList").split(listSeparator).map(artistId => ArtistRepository.getSimpleArtist(artistId)).toList
+    )
+  }
+
+  /**
+    * Convert given Track object to SimpleTrack object.
+    *
+    * @param track Track
+    * @return SimpleTrack
+    */
+  def trackToSimpleTrack(track: Track): SimpleTrack = {
+    SimpleTrack(
+      track.getId,
+      track.getName,
+      track.getAlbum.getImages.head.getUrl,
+      track.getArtists.map(artist => artistSimplifiedToSimpleArtist(artist)).toList
     )
   }
 

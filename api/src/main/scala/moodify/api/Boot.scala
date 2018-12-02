@@ -7,6 +7,7 @@ import akka.stream.ActorMaterializer
 import moodify.Config
 import moodify.core.{Identification, Insight}
 import moodify.model.SimpleArtistProtocol._
+import moodify.model.SimpleTrackProtocol._
 import moodify.model.TrendlineProtocol._
 import moodify.model.{Response, TimeRange}
 import moodify.service.SpotifyService
@@ -96,6 +97,22 @@ object Boot extends Config {
                     val insight = new Insight(spotify, userId)
                     val simpleArtistList = insight.getTopArtists(maybeTimeRange.get, TOP_ARTIST_TRACK_LIMIT)
                     complete(Response.json(success = true, data = simpleArtistList.toJson))
+                  }
+                }
+              }
+            }
+            /*
+             * GET /user/{user-id}/top-tracks/{time-range}
+             * Get top tracks of given user for given time range.
+             */
+            pathPrefix("top-tracks" / Segment) { timeRangeString: String =>
+              pathEndOrSingleSlash {
+                get {
+                  val maybeTimeRange = Try(TimeRange.withName(timeRangeString)).toOption
+                  validate(maybeTimeRange.isDefined, Response.error("Given time range is not valid.")) {
+                    val insight = new Insight(spotify, userId)
+                    val simpleTrackList = insight.getTopTracks(maybeTimeRange.get, TOP_ARTIST_TRACK_LIMIT)
+                    complete(Response.json(success = true, data = simpleTrackList.toJson))
                   }
                 }
               }
