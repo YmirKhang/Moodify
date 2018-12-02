@@ -1,7 +1,8 @@
 package moodify.core
 
 import moodify.helper.Converter
-import moodify.model.{TrackFeatures, Trendline}
+import moodify.model.{SimpleArtist, TimeRange, TrackFeatures, Trendline}
+import moodify.repository.ArtistRepository
 import moodify.service.{RedisService, SpotifyService}
 
 /**
@@ -23,16 +24,48 @@ class Insight(spotifyService: SpotifyService, userId: String) {
   private val trackFeaturesTTL = 30 * 86400 // 30 days.
 
   /**
+    * Get top artists of current user.
+    *
+    * @param timeRange Time range for operation.
+    * @param limit     Number of artists.
+    * @return Top artists.
+    */
+  def getTopArtists(timeRange: TimeRange.Value, limit: Int): Array[SimpleArtist] = {
+    val userRedisKey = s"user:$userId:top:artist:$timeRange"
+
+    // Get user's top artist id list from Redis. If size is enough get artist data and return.
+    val maybeTopArtistIdList = RedisService.lrange(userRedisKey, size = limit)
+    if (maybeTopArtistIdList.isDefined) {
+      val topArtistIdList = maybeTopArtistIdList.get
+        .map(maybeArtistId => maybeArtistId.getOrElse(""))
+        .filter(artistId => artistId.nonEmpty)
+
+      if (topArtistIdList.length == limit) {
+        val simpleArtistArray = topArtistIdList.map(artistId => ArtistRepository.getSimpleArtist(artistId)).toArray
+        return simpleArtistArray
+      }
+    }
+
+    // Redis does not hold required data. Get top artists from Spotify.
+    val topArtists = spotifyService.getTopArtists(timeRange, limit)
+    val topSimpleArtists = topArtists.map(artist => Converter.artistToSimpleArtist(artist))
+    topSimpleArtists.foreach(simpleArtist => ArtistRepository.saveSimpleArtist(simpleArtist))
+
+
+    topSimpleArtists
+  }
+
+  /**
     * Creates trendline for authenticated user using last played `numTracks` many tracks.
     *
     * @param numTracks Recently played track count to be used.
     * @return User's Trendline.
     */
   def getTrendline(numTracks: Int): Trendline = {
-    val redisTrendlineKey = s"user:$userId:trendline:$numTracks"
+    val redisKey = s"user:$userId:trendline:$numTracks"
 
     // Get specified trendline from Redis.
-    val maybeTrendline = RedisService.hgetall(redisTrendlineKey)
+    val maybeTrendline = RedisService.hgetall(redisKey)
     if (maybeTrendline.isDefined) {
       val trendline = Converter.mapToTrendline(maybeTrendline.get)
       return trendline
@@ -60,7 +93,7 @@ class Insight(spotifyService: SpotifyService, userId: String) {
     }
 
     // Save calculated trendline to Redis.
-    RedisService.hmset(redisTrendlineKey, Converter.trendlineToMap(avgTrendline), userTrendlineTTL)
+    RedisService.hmset(redisKey, Converter.trendlineToMap(avgTrendline), userTrendlineTTL)
 
     avgTrendline
   }

@@ -181,16 +181,9 @@ class SpotifyService extends Config with LazyLogging {
     */
   def getRecommendations(seedArtists: String,
                          seedTracks: String,
-                         limit: Int,
-                         acousticness: Double = -1,
-                         instrumentalness: Double = -1,
-                         speechiness: Double = -1,
-                         danceability: Double = -1,
-                         liveness: Double = -1,
-                         energy: Double = -1,
-                         valence: Double = -1): Array[TrackSimplified] = {
+                         limit: Int): Array[TrackSimplified] = {
 
-    var request = spotifyApi
+    val request = spotifyApi
       .getRecommendations
       .limit(limit)
       .seed_artists(seedArtists)
@@ -202,6 +195,36 @@ class SpotifyService extends Config with LazyLogging {
       .getTracks
 
     recommendations
+  }
+
+  /**
+    * Get artist data for given `artistId`.
+    *
+    * @param artistId Artist's Spotify ID.
+    * @return Artist.
+    */
+  def getArtist(artistId: String): Artist = {
+    val artist = spotifyApi
+      .getArtist(artistId)
+      .build
+      .execute
+
+    artist
+  }
+
+  /**
+    * Get track data for given `trackId`.
+    *
+    * @param trackId Track's Spotify ID.
+    * @return Track.
+    */
+  def getTrack(trackId: String): Track = {
+    val track = spotifyApi
+      .getTrack(trackId)
+      .build
+      .execute
+
+    track
   }
 
 }

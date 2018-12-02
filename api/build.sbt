@@ -13,7 +13,7 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka"            %% "akka-http"                 % akkaHttpVersion,
   "com.typesafe.akka"            %% "akka-http-spray-json"      % akkaHttpVersion,
   "com.typesafe.scala-logging"   %% "scala-logging"             % "3.9.0",
-  "net.debasishg"                %% "redisclient"               % "3.5",
+  "net.debasishg"                %% "redisclient"               % "3.8",
   "org.scalatest"                %% "scalatest"                 % "3.0.5" % "test",
   "ch.qos.logback"               %  "logback-classic"           % "1.2.3",
   "se.michaelthelin.spotify"     %  "spotify-web-api-java"      % "2.0.5",

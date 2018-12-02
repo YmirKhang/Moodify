@@ -84,4 +84,49 @@ object RedisService extends Config {
     }
   }
 
+  /**
+    * Add values to the tail of the list stored at key.
+    *
+    * @param key    Redis key.
+    * @param values List of values to be added to the tail of list.
+    * @param ttl    Time to live for created key in seconds.
+    * @return Success.
+    */
+  def rpush(key: String, values: List[String], ttl: Int): Boolean = {
+    rcp.withClient {
+      client =>
+        client.rpush(key, values.head, values.tail: _*)
+        client.expire(key, ttl)
+    }
+  }
+
+  /**
+    * Return the specified elements of the list stored at the specified key.
+    *
+    * @param key    Redis key.
+    * @param offset Start index.
+    * @param size   Number of requested elements.
+    * @return List of values.
+    **/
+  def lrange(key: String, offset: Int = 0, size: Int = 0): Option[List[Option[String]]] = {
+    val stop = offset + size - 1
+    rcp.withClient {
+      client =>
+        client.lrange(key, offset, stop)
+    }
+  }
+
+  /**
+    * Deletes the specified key.
+    *
+    * @param key Redis key.
+    * @return Option[Long]
+    */
+  def del(key: String): Option[Long] = {
+    rcp.withClient {
+      client =>
+        client.del(key)
+    }
+  }
+
 }
