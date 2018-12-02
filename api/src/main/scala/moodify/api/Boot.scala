@@ -6,18 +6,22 @@ import akka.http.scaladsl.server.Directives.{complete, get, path, pathEndOrSingl
 import akka.stream.ActorMaterializer
 import moodify.Config
 import moodify.core.{Identification, Insight}
-import moodify.model.Response
+import moodify.model.SimpleArtistProtocol._
 import moodify.model.TrendlineProtocol._
+import moodify.model.{Response, TimeRange}
 import moodify.service.SpotifyService
 import spray.json._
 
 import scala.concurrent.ExecutionContextExecutor
+import scala.util.Try
 
 object Boot extends Config {
 
   implicit val system: akka.actor.ActorSystem = ActorSystem("Moodify")
   implicit val executor: ExecutionContextExecutor = system.dispatcher
   implicit val materializer: ActorMaterializer = ActorMaterializer()
+
+  implicit def listJsonWriter[T: JsonWriter]: RootJsonWriter[List[T]] = (list: List[T]) => JsArray(list.map(_.toJson).toVector)
 
   def main(args: Array[String]): Unit = {
 
@@ -76,6 +80,22 @@ object Boot extends Config {
                     val insight = new Insight(spotify, userId)
                     val trendline = insight.getTrendline(numTracks)
                     complete(Response.json(success = true, data = trendline.toJson))
+                  }
+                }
+              }
+            }
+            /*
+             * GET /user/{user-id}/top-artists/{time-range}
+             * Get top artists of given user for given time range.
+             */
+            pathPrefix("top-artists" / Segment) { timeRangeString: String =>
+              pathEndOrSingleSlash {
+                get {
+                  val maybeTimeRange = Try(TimeRange.withName(timeRangeString)).toOption
+                  validate(maybeTimeRange.isDefined, Response.error("Given time range is not valid.")) {
+                    val insight = new Insight(spotify, userId)
+                    val simpleArtistList = insight.getTopArtists(maybeTimeRange.get, TOP_ARTIST_TRACK_LIMIT)
+                    complete(Response.json(success = true, data = simpleArtistList.toJson))
                   }
                 }
               }

@@ -62,4 +62,9 @@ trait Config {
     */
   val HTTP_PORT: Int = config.getInt("HTTP.PORT")
 
+  /**
+    * Limit for top artists and tracks.
+    */
+  val TOP_ARTIST_TRACK_LIMIT: Int = config.getInt("SPOTIFY.TOP_ARTIST_TRACK_LIMIT")
+
 }

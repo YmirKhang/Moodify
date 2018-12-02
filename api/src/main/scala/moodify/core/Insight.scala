@@ -30,7 +30,7 @@ class Insight(spotifyService: SpotifyService, userId: String) {
     * @param limit     Number of artists.
     * @return Top artists.
     */
-  def getTopArtists(timeRange: TimeRange.Value, limit: Int): Array[SimpleArtist] = {
+  def getTopArtists(timeRange: TimeRange.Value, limit: Int): List[SimpleArtist] = {
     val userRedisKey = s"user:$userId:top:artist:$timeRange"
 
     // Get user's top artist id list from Redis. If size is enough get artist data and return.
@@ -41,13 +41,13 @@ class Insight(spotifyService: SpotifyService, userId: String) {
         .filter(artistId => artistId.nonEmpty)
 
       if (topArtistIdList.length == limit) {
-        val simpleArtistArray = topArtistIdList.map(artistId => ArtistRepository.getSimpleArtist(artistId)).toArray
-        return simpleArtistArray
+        val simpleArtistList = topArtistIdList.map(artistId => ArtistRepository.getSimpleArtist(artistId))
+        return simpleArtistList
       }
     }
 
     // Redis does not hold required data. Get top artists from Spotify.
-    val topArtists = spotifyService.getTopArtists(timeRange, limit)
+    val topArtists = spotifyService.getTopArtists(timeRange, limit).toList
     val topSimpleArtists = topArtists.map(artist => Converter.artistToSimpleArtist(artist))
     topSimpleArtists.foreach(simpleArtist => ArtistRepository.saveSimpleArtist(simpleArtist))
 
