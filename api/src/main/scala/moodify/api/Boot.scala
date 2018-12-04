@@ -5,11 +5,12 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Directives.{complete, get, path, pathEndOrSingleSlash, _}
 import akka.stream.ActorMaterializer
 import moodify.Config
-import moodify.core.{Identification, Insight}
+import moodify.core.{Identification, Insight, Recommendation}
+import moodify.model.RecommendationPreferencesProtocol._
 import moodify.model.SimpleArtistProtocol._
 import moodify.model.SimpleTrackProtocol._
 import moodify.model.TrendlineProtocol._
-import moodify.model.{Response, TimeRange}
+import moodify.model.{RecommendationPreferences, Response, TimeRange}
 import moodify.service.SpotifyService
 import spray.json._
 
@@ -84,39 +85,58 @@ object Boot extends Config {
                   }
                 }
               }
-            }
-            /*
-             * GET /user/{user-id}/top-artists/{time-range}
-             * Get top artists of given user for given time range.
-             */
-            pathPrefix("top-artists" / Segment) { timeRangeString: String =>
-              pathEndOrSingleSlash {
-                get {
-                  val maybeTimeRange = Try(TimeRange.withName(timeRangeString)).toOption
-                  validate(maybeTimeRange.isDefined, Response.error("Given time range is not valid.")) {
-                    val insight = new Insight(spotify, userId)
-                    val simpleArtistList = insight.getTopArtists(maybeTimeRange.get, TOP_ARTIST_TRACK_LIMIT)
-                    complete(Response.json(success = true, data = simpleArtistList.toJson))
+            } ~
+              /*
+               * GET /user/{user-id}/top-artists/{time-range}
+               * Get top artists of given user for given time range.
+               */
+              pathPrefix("top-artists" / Segment) { timeRangeString: String =>
+                pathEndOrSingleSlash {
+                  get {
+                    val maybeTimeRange = Try(TimeRange.withName(timeRangeString)).toOption
+                    validate(maybeTimeRange.isDefined, Response.error("Given time range is not valid.")) {
+                      val insight = new Insight(spotify, userId)
+                      val simpleArtistList = insight.getTopArtists(maybeTimeRange.get, TOP_ARTIST_TRACK_LIMIT)
+                      complete(Response.json(success = true, data = simpleArtistList.toJson))
+                    }
+                  }
+                }
+              } ~
+              /*
+               * GET /user/{user-id}/top-tracks/{time-range}
+               * Get top tracks of given user for given time range.
+               */
+              pathPrefix("top-tracks" / Segment) { timeRangeString: String =>
+                pathEndOrSingleSlash {
+                  get {
+                    val maybeTimeRange = Try(TimeRange.withName(timeRangeString)).toOption
+                    validate(maybeTimeRange.isDefined, Response.error("Given time range is not valid.")) {
+                      val insight = new Insight(spotify, userId)
+                      val simpleTrackList = insight.getTopTracks(maybeTimeRange.get, TOP_ARTIST_TRACK_LIMIT)
+                      complete(Response.json(success = true, data = simpleTrackList.toJson))
+                    }
+                  }
+                }
+              } ~
+              /*
+               * POST /user/{user-id}/recommendation
+               * Get recommendations for user with given settings.
+               */
+              pathPrefix("recommendation") {
+                pathEndOrSingleSlash {
+                  post {
+                    entity(as[String]) { body =>
+                      validate(body.nonEmpty, Response.error("Recommendation settings must be provided.")) {
+                        val preferences = body.parseJson.convertTo[RecommendationPreferences]
+                        val recommendation = new Recommendation(spotify, userId)
+                        val success = recommendation.recommend(preferences, NEW_PLAYLIST_SIZE)
+                        complete(Response.json(success = success))
+                      }
+                    }
                   }
                 }
               }
-            }
-            /*
-             * GET /user/{user-id}/top-tracks/{time-range}
-             * Get top tracks of given user for given time range.
-             */
-            pathPrefix("top-tracks" / Segment) { timeRangeString: String =>
-              pathEndOrSingleSlash {
-                get {
-                  val maybeTimeRange = Try(TimeRange.withName(timeRangeString)).toOption
-                  validate(maybeTimeRange.isDefined, Response.error("Given time range is not valid.")) {
-                    val insight = new Insight(spotify, userId)
-                    val simpleTrackList = insight.getTopTracks(maybeTimeRange.get, TOP_ARTIST_TRACK_LIMIT)
-                    complete(Response.json(success = true, data = simpleTrackList.toJson))
-                  }
-                }
-              }
-            }
+
           }
         }
     }

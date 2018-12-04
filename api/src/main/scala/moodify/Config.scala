@@ -67,4 +67,9 @@ trait Config {
     */
   val TOP_ARTIST_TRACK_LIMIT: Int = config.getInt("SPOTIFY.TOP_ARTIST_TRACK_LIMIT")
 
+  /**
+    * Size of newly created playlist.
+    */
+  val NEW_PLAYLIST_SIZE: Int = config.getInt("SPOTIFY.NEW_PLAYLIST_SIZE")
+
 }

@@ -2,12 +2,15 @@ package moodify.service
 
 import java.net.URI
 
+import com.google.gson.JsonParser
 import com.typesafe.scalalogging.LazyLogging
 import com.wrapper.spotify.SpotifyApi
 import com.wrapper.spotify.model_objects.credentials.AuthorizationCodeCredentials
-import com.wrapper.spotify.model_objects.specification.{Artist, PlayHistory, Track, TrackSimplified}
+import com.wrapper.spotify.model_objects.specification._
 import moodify.Config
-import moodify.model.{TimeRange, TrackFeatures, Trendline}
+import moodify.model.{RecommendationPreferences, TimeRange, TrackFeatures, Trendline}
+import spray.json.DefaultJsonProtocol._
+import spray.json._
 
 /**
   * Communicates with Spotify API for authenticated user.
@@ -77,6 +80,21 @@ class SpotifyService extends Config with LazyLogging {
       .build()
 
     renewedCredentials
+  }
+
+  /**
+    * Get current user's Spotify ID.
+    *
+    * @return User ID
+    */
+  def getCurrentUserId: String = {
+    val userId = spotifyApi
+      .getCurrentUsersProfile
+      .build
+      .execute
+      .getId
+
+    userId
   }
 
   /**
@@ -172,32 +190,6 @@ class SpotifyService extends Config with LazyLogging {
   }
 
   /**
-    * Get recommendations for given seeds and audio features.
-    *
-    * @param seedArtists Comma separated list of artists ids.
-    * @param seedTracks  Comma separated list of track ids.
-    * @param limit       Number of tracks to recommend.
-    * @return
-    */
-  def getRecommendations(seedArtists: String,
-                         seedTracks: String,
-                         limit: Int): Array[TrackSimplified] = {
-
-    val request = spotifyApi
-      .getRecommendations
-      .limit(limit)
-      .seed_artists(seedArtists)
-      .seed_tracks(seedTracks)
-
-    val recommendations = request
-      .build
-      .execute
-      .getTracks
-
-    recommendations
-  }
-
-  /**
     * Get artist data for given `artistId`.
     *
     * @param artistId Artist's Spotify ID.
@@ -225,6 +217,129 @@ class SpotifyService extends Config with LazyLogging {
       .execute
 
     track
+  }
+
+  /**
+    * Finds a playlist of current user by playlist's name.
+    *
+    * @param playlistName Name of the playlist.
+    * @return Optional Playlist
+    */
+  def getCurrentUsersPlaylist(playlistName: String): Option[PlaylistSimplified] = {
+    val maybePlaylist = spotifyApi
+      .getListOfCurrentUsersPlaylists
+      .build
+      .execute
+      .getItems
+      .find(playlist => playlist.getName == playlistName)
+
+    maybePlaylist
+  }
+
+  /**
+    * Creates a playlist for current user with given playlist name.
+    *
+    * @param playlistName Name of the playlist.
+    * @param description  Description of the playlist.
+    * @param isPublic     Publicity of the playlist.
+    * @return Playlist
+    */
+  def createPlaylist(playlistName: String, description: String, isPublic: Boolean): Playlist = {
+    val playlist = spotifyApi
+      .createPlaylist(getCurrentUserId, playlistName)
+      .description(description)
+      .public_(isPublic)
+      .build
+      .execute
+
+    playlist
+  }
+
+  /**
+    * Changes the description of given playlist of current user with given description text.
+    *
+    * @param playlistId  Spotify ID of the playlist.
+    * @param description Description text.
+    */
+  def changePlaylistsDescription(playlistId: String, description: String): Unit = {
+    spotifyApi
+      .changePlaylistsDetails(getCurrentUserId, playlistId)
+      .description(description)
+      .build
+      .execute
+  }
+
+  /**
+    * Deletes all tracks of current user's given playlist.
+    *
+    * @param playlistId Spotify ID of the playlist.
+    */
+  def flushPlaylist(playlistId: String): Unit = {
+    val userId = getCurrentUserId
+
+    val playlistTracks = spotifyApi
+      .getPlaylistsTracks(userId, playlistId)
+      .build
+      .execute
+      .getItems
+
+    val playlistTracksJsonString = playlistTracks
+      .map(track => Map("uri" -> track.getTrack.getUri))
+      .toList
+      .toJson
+      .compactPrint
+
+    val playlistTracksJsonArray = new JsonParser()
+      .parse(playlistTracksJsonString)
+      .getAsJsonArray
+
+    spotifyApi
+      .removeTracksFromPlaylist(userId, playlistId, playlistTracksJsonArray)
+      .build
+      .execute
+  }
+
+  /**
+    * Adds given tracks to current user's given playlist.
+    *
+    * @param playlistId   Spotify ID of the playlist.
+    * @param trackUriList Spotify URI list off tracks to be added.
+    */
+  def addTracksToPlaylist(playlistId: String, trackUriList: Array[String]): Unit = {
+    spotifyApi
+      .addTracksToPlaylist(getCurrentUserId, playlistId, trackUriList)
+      .build
+      .execute
+  }
+
+  /**
+    * Get recommendations for given seeds and audio features.
+    *
+    * @param preferences Preferences for recommended tracks.
+    * @param limit       Number of tracks to recommend.
+    * @return
+    */
+  def getRecommendations(preferences: RecommendationPreferences, limit: Int): Array[TrackSimplified] = {
+    var request = spotifyApi
+      .getRecommendations
+      .limit(limit)
+
+    if (preferences.seedArtistIdList.isDefined) request = request.seed_artists(preferences.seedArtistIdList.get.mkString(","))
+    if (preferences.seedTrackIdList.isDefined) request = request.seed_tracks(preferences.seedTrackIdList.get.mkString(","))
+    if (preferences.acousticness.isDefined) request = request.target_acousticness(preferences.acousticness.get.toFloat)
+    if (preferences.instrumentalness.isDefined) request = request.target_instrumentalness(preferences.instrumentalness.get.toFloat)
+    if (preferences.speechiness.isDefined) request = request.target_speechiness(preferences.speechiness.get.toFloat)
+    if (preferences.danceability.isDefined) request = request.target_danceability(preferences.danceability.get.toFloat)
+    if (preferences.liveness.isDefined) request = request.target_liveness(preferences.liveness.get.toFloat)
+    if (preferences.energy.isDefined) request = request.target_energy(preferences.energy.get.toFloat)
+    if (preferences.valence.isDefined) request = request.target_valence(preferences.valence.get.toFloat)
+
+    val recommendations = request
+      .build
+      .execute
+      .getTracks
+
+    recommendations
   }
 
 }
