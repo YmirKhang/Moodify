@@ -2,6 +2,7 @@ package moodify.core
 
 import com.typesafe.scalalogging.LazyLogging
 import moodify.model.RecommendationPreferences
+import moodify.repository.UserRepository
 import moodify.service.SpotifyService
 
 class Recommendation(spotifyService: SpotifyService, userId: String) extends LazyLogging {
@@ -30,7 +31,8 @@ class Recommendation(spotifyService: SpotifyService, userId: String) extends Laz
     */
   def recommend(preferences: RecommendationPreferences, limit: Int): Boolean = {
     try {
-      val recommendedTracks = spotifyService.getRecommendations(preferences, limit)
+      val market = UserRepository.getCountryCode(spotifyService, userId)
+      val recommendedTracks = spotifyService.getRecommendations(preferences, limit, Some(market))
       val recommendedTracksUriArray = recommendedTracks.map(track => track.getUri)
       val playlistId = prepareFreshPlaylist()
       spotifyService.addTracksToPlaylist(playlistId, recommendedTracksUriArray)

@@ -1,6 +1,6 @@
-package moodify.model
+package moodify.helper
 
-import spray.json._
+import spray.json.{JsArray, JsFalse, JsNumber, JsObject, JsString, JsTrue, JsValue, JsonFormat}
 
 object AnyJsonProtocol extends Serializable {
 

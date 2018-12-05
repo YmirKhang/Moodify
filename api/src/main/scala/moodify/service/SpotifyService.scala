@@ -3,6 +3,7 @@ package moodify.service
 import java.net.URI
 
 import com.google.gson.JsonParser
+import com.neovisionaries.i18n.CountryCode
 import com.typesafe.scalalogging.LazyLogging
 import com.wrapper.spotify.SpotifyApi
 import com.wrapper.spotify.model_objects.credentials.AuthorizationCodeCredentials
@@ -95,6 +96,38 @@ class SpotifyService extends Config with LazyLogging {
       .getId
 
     userId
+  }
+
+  /**
+    * Get current user's country code.
+    *
+    * @return Country Code
+    */
+  def getCurrentUserCountryCode: CountryCode = {
+    val countryCode = spotifyApi
+      .getCurrentUsersProfile
+      .build
+      .execute
+      .getCountry
+
+    countryCode
+  }
+
+  /**
+    * Get current user's image URL.
+    *
+    * @return Image URL
+    */
+  def getCurrentUserImageUrl: String = {
+    val imageUrl = spotifyApi
+      .getCurrentUsersProfile
+      .build
+      .execute
+      .getImages
+      .head
+      .getUrl
+
+    imageUrl
   }
 
   /**
@@ -317,13 +350,15 @@ class SpotifyService extends Config with LazyLogging {
     *
     * @param preferences Preferences for recommended tracks.
     * @param limit       Number of tracks to recommend.
-    * @return
+    * @param maybeMarket Market availability.
+    * @return Recommended tracks.
     */
-  def getRecommendations(preferences: RecommendationPreferences, limit: Int): Array[TrackSimplified] = {
+  def getRecommendations(preferences: RecommendationPreferences, limit: Int, maybeMarket: Option[CountryCode] = None): Array[TrackSimplified] = {
     var request = spotifyApi
       .getRecommendations
       .limit(limit)
 
+    if (maybeMarket.isDefined) request = request.market(maybeMarket.get)
     if (preferences.seedArtistIdList.isDefined) request = request.seed_artists(preferences.seedArtistIdList.get.mkString(","))
     if (preferences.seedTrackIdList.isDefined) request = request.seed_tracks(preferences.seedTrackIdList.get.mkString(","))
     if (preferences.acousticness.isDefined) request = request.target_acousticness(preferences.acousticness.get.toFloat)

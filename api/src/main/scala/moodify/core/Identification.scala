@@ -13,6 +13,11 @@ import moodify.service.{RedisService, SpotifyService}
 object Identification extends LazyLogging {
 
   /**
+    * Refresh token TTL for Redis.
+    */
+  private val refreshTokenTTL = 30 * 86400 // 30 days.
+
+  /**
     * Get Redis key for access token of given user.
     *
     * @param userId Moodify user id.
@@ -89,7 +94,6 @@ object Identification extends LazyLogging {
     val accessToken = credentials.getAccessToken
     val refreshToken = credentials.getRefreshToken
     val accessTokenTTL = credentials.getExpiresIn
-    val refreshTokenTTL = 30 * 86400 // 30 days.
 
     try {
       RedisService.set(accessTokenKey(userId), accessToken, accessTokenTTL)
