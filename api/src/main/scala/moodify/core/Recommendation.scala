@@ -5,7 +5,7 @@ import moodify.model.RecommendationPreferences
 import moodify.repository.UserRepository
 import moodify.service.SpotifyService
 
-class Recommendation(spotifyService: SpotifyService, userId: String) extends LazyLogging {
+class Recommendation(spotify: SpotifyService, userId: String) extends LazyLogging {
 
   /**
     * Default name for newly created playlist.
@@ -31,11 +31,12 @@ class Recommendation(spotifyService: SpotifyService, userId: String) extends Laz
     */
   def recommend(preferences: RecommendationPreferences, limit: Int): Boolean = {
     try {
-      val market = UserRepository.getCountryCode(spotifyService, userId)
-      val recommendedTracks = spotifyService.getRecommendations(preferences, limit, Some(market))
+      val userProfile = UserRepository.getUser(spotify, userId)
+      val maybeMarket = Some(userProfile.countryCode)
+      val recommendedTracks = spotify.getRecommendations(preferences, limit, maybeMarket)
       val recommendedTracksUriArray = recommendedTracks.map(track => track.getUri)
       val playlistId = prepareFreshPlaylist()
-      spotifyService.addTracksToPlaylist(playlistId, recommendedTracksUriArray)
+      spotify.addTracksToPlaylist(playlistId, recommendedTracksUriArray)
       true
     }
     catch {
@@ -52,16 +53,16 @@ class Recommendation(spotifyService: SpotifyService, userId: String) extends Laz
     * @return Spotify ID of playlist.
     */
   private def prepareFreshPlaylist(): String = {
-    val maybePlaylist = spotifyService.getCurrentUsersPlaylist(playlistName)
+    val maybePlaylist = spotify.getCurrentUsersPlaylist(playlistName)
 
     val playlistId = {
       if (maybePlaylist.isDefined) {
         val playlistId = maybePlaylist.get.getId
-        spotifyService.flushPlaylist(playlistId)
-        spotifyService.changePlaylistsDescription(playlistId, playlistDescription)
+        spotify.flushPlaylist(playlistId)
+        spotify.changePlaylistsDescription(playlistId, playlistDescription)
         playlistId
       } else {
-        val playlist = spotifyService.createPlaylist(playlistName, playlistDescription, playlistPublicity)
+        val playlist = spotify.createPlaylist(playlistName, playlistDescription, playlistPublicity)
         playlist.getId
       }
     }

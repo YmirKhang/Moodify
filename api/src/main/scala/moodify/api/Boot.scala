@@ -10,7 +10,9 @@ import moodify.model.RecommendationPreferencesProtocol._
 import moodify.model.SimpleArtistProtocol._
 import moodify.model.SimpleTrackProtocol._
 import moodify.model.TrendlineProtocol._
+import moodify.model.UserProfileProtocol._
 import moodify.model.{RecommendationPreferences, Response, TimeRange}
+import moodify.repository.UserRepository
 import moodify.service.SpotifyService
 import spray.json._
 
@@ -71,21 +73,33 @@ object Boot extends Config {
             val spotify = new SpotifyService
             spotify.authorize(accessToken)
             /*
-             * GET /user/{user-id}/trendline/{num-tracks}
-             * Get trendline for given user using given number of tracks.
+             * GET /user/{user-id}/profile
+             * Get profile information of given user.
              */
-            pathPrefix("trendline" / Segment) { numTracksString: String =>
+            pathPrefix("profile") {
               pathEndOrSingleSlash {
                 get {
-                  val numTracks = numTracksString.toInt
-                  validate(numTracks <= 50, Response.json(success = false, message = "Limit is 50 songs.")) {
-                    val insight = new Insight(spotify, userId)
-                    val trendline = insight.getTrendline(numTracks)
-                    complete(Response.json(success = true, data = trendline.toJson))
-                  }
+                  val profile = UserRepository.getUser(spotify, userId)
+                  complete(Response.json(success = true, data = profile.toJson))
                 }
               }
             } ~
+              /*
+               * GET /user/{user-id}/trendline/{num-tracks}
+               * Get trendline for given user using given number of tracks.
+               */
+              pathPrefix("trendline" / Segment) { numTracksString: String =>
+                pathEndOrSingleSlash {
+                  get {
+                    val numTracks = numTracksString.toInt
+                    validate(numTracks <= 50, Response.json(success = false, message = "Limit is 50 songs.")) {
+                      val insight = new Insight(spotify, userId)
+                      val trendline = insight.getTrendline(numTracks)
+                      complete(Response.json(success = true, data = trendline.toJson))
+                    }
+                  }
+                }
+              } ~
               /*
                * GET /user/{user-id}/top-artists/{time-range}
                * Get top artists of given user for given time range.

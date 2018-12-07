@@ -1,7 +1,8 @@
 package moodify.helper
 
+import com.neovisionaries.i18n.CountryCode
 import com.wrapper.spotify.model_objects.specification.{Artist, ArtistSimplified, Track}
-import moodify.model.{SimpleArtist, SimpleTrack, Trendline}
+import moodify.model.{SimpleArtist, SimpleTrack, Trendline, UserProfile}
 import moodify.repository.ArtistRepository
 
 object Converter {
@@ -150,6 +151,36 @@ object Converter {
       track.getName,
       track.getAlbum.getImages.head.getUrl,
       track.getArtists.map(artist => artistSimplifiedToSimpleArtist(artist)).toList
+    )
+  }
+
+  /**
+    * Convert given UserProfile object to Map.
+    *
+    * @param userProfile UserProfile
+    * @return Map[String, String]
+    */
+  def userProfileToMap(userProfile: UserProfile): Map[String, String] = {
+    Map(
+      "username" -> userProfile.username,
+      "name" -> userProfile.name,
+      "imageUrl" -> userProfile.imageUrl,
+      "countryCode" -> userProfile.countryCode.getAlpha2
+    )
+  }
+
+  /**
+    * Convert given Map to UserProfile object.
+    *
+    * @param map Map[String, String]
+    * @return UserProfile
+    */
+  def mapToUserProfile(map: Map[String, String]): UserProfile = {
+    UserProfile(
+      map("username"),
+      map("name"),
+      map("imageUrl"),
+      CountryCode.valueOf(map("countryCode"))
     )
   }
 

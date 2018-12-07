@@ -84,50 +84,26 @@ class SpotifyService extends Config with LazyLogging {
   }
 
   /**
+    * Get current user.
+    *
+    * @return User
+    */
+  def getCurrentUser: User = {
+    val user = spotifyApi
+      .getCurrentUsersProfile
+      .build
+      .execute
+
+    user
+  }
+
+  /**
     * Get current user's Spotify ID.
     *
     * @return User ID
     */
   def getCurrentUserId: String = {
-    val userId = spotifyApi
-      .getCurrentUsersProfile
-      .build
-      .execute
-      .getId
-
-    userId
-  }
-
-  /**
-    * Get current user's country code.
-    *
-    * @return Country Code
-    */
-  def getCurrentUserCountryCode: CountryCode = {
-    val countryCode = spotifyApi
-      .getCurrentUsersProfile
-      .build
-      .execute
-      .getCountry
-
-    countryCode
-  }
-
-  /**
-    * Get current user's image URL.
-    *
-    * @return Image URL
-    */
-  def getCurrentUserImageUrl: String = {
-    val imageUrl = spotifyApi
-      .getCurrentUsersProfile
-      .build
-      .execute
-      .getImages
-      .head
-      .getUrl
-
-    imageUrl
+    getCurrentUser.getId
   }
 
   /**

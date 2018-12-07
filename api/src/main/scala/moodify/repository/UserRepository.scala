@@ -1,92 +1,58 @@
 package moodify.repository
 
-import com.neovisionaries.i18n.CountryCode
+import moodify.helper.Converter
+import moodify.model.UserProfile
 import moodify.service.{RedisService, SpotifyService}
 
 object UserRepository {
 
   /**
-    * TTL for user's country data in Redis.
+    * TTL for user's data in Redis.
     */
-  private val userCountryRedisTTL: Int = 30 * 86400 // Days
+  private val userRedisTTL: Int = 1 * 86400 // Days
 
   /**
-    * TTL for user's image data in Redis.
-    */
-  private val userImageRedisTTL: Int = 1 * 86400 // Days
-
-  /**
-    * Get Redis key for user's country.
+    * Get Redis key for user.
     *
     * @param userId User's Moodify ID.
     * @return Redis key.
     */
-  private def userCountryRedisKey(userId: String): String = s"user:$userId:country"
+  private def userRedisKey(userId: String): String = s"user:$userId"
 
   /**
-    * Get Redis key for user's image.
+    * Get user data for given user.
     *
-    * @param userId User's Moodify ID.
-    * @return Redis key.
+    * @param spotify User authorized Spotify service.
+    * @param userId  User's Moodify ID.
+    * @return UserProfile
     */
-  private def userImageRedisKey(userId: String): String = s"user:$userId:image"
-
-  /**
-    * Get country code for given user.
-    *
-    * @param spotifyService User authorized Spotify service.
-    * @param userId         User's Moodify ID.
-    * @return Country Code
-    */
-  def getCountryCode(spotifyService: SpotifyService, userId: String): CountryCode = {
-    val maybeCountry = RedisService.get(userCountryRedisKey(userId))
-    if (maybeCountry.isDefined) {
-      CountryCode.valueOf(maybeCountry.get)
+  def getUser(spotify: SpotifyService, userId: String): UserProfile = {
+    val maybeUser = RedisService.hgetall(userRedisKey(userId))
+    if (maybeUser.isDefined) {
+      Converter.mapToUserProfile(maybeUser.get)
     } else {
-      val countryCode = spotifyService.getCurrentUserCountryCode
-      setCountryCode(userId, countryCode)
-      countryCode
+      val user = spotify.getCurrentUser
+      val userProfile = UserProfile(
+        username = user.getId,
+        name = user.getDisplayName,
+        imageUrl = user.getImages.head.getUrl,
+        countryCode = user.getCountry
+      )
+      setUser(userProfile, userId)
+      userProfile
     }
   }
 
   /**
-    * Get image URL for given user.
+    * Saves given `userProfile` data in Redis.
     *
-    * @param spotifyService User authorized Spotify service.
-    * @param userId         User's Moodify ID.
-    * @return URL for user's Spotify profile picture.
-    */
-  def getImageUrl(spotifyService: SpotifyService, userId: String): String = {
-    val maybeImageUrl = RedisService.get(userImageRedisKey(userId))
-    if (maybeImageUrl.isDefined) {
-      maybeImageUrl.get
-    } else {
-      val imageUrl = spotifyService.getCurrentUserImageUrl
-      setImageUrl(userId, imageUrl)
-      imageUrl
-    }
-  }
-
-  /**
-    * Set user's country code.
-    *
+    * @param userProfile UserProfile
     * @param userId      User's Moodify ID.
-    * @param countryCode User's country code.
-    * @return Success
     */
-  def setCountryCode(userId: String, countryCode: CountryCode): Boolean = {
-    RedisService.set(userCountryRedisKey(userId), countryCode.getAlpha2, userCountryRedisTTL)
-  }
-
-  /**
-    * Set user's image url.
-    *
-    * @param userId   User's Moodify ID.
-    * @param imageUrl User's Spotify profile image's URL.
-    * @return
-    */
-  def setImageUrl(userId: String, imageUrl: String): Boolean = {
-    RedisService.set(userImageRedisKey(userId), imageUrl, userImageRedisTTL)
+  def setUser(userProfile: UserProfile, userId: String): Unit = {
+    val key = userRedisKey(userId)
+    val map = Converter.userProfileToMap(userProfile)
+    RedisService.hmset(key, map, userRedisTTL)
   }
 
 }
