@@ -6,6 +6,11 @@ import spray.json._
 object Response {
 
   /**
+    * Default error message.
+    */
+  private val defaultErrorMessage = "An error occurred."
+
+  /**
     * Respond success with additional data.
     *
     * @return Success response as JSON string.
@@ -24,7 +29,7 @@ object Response {
     *
     * @return Error response as JSON string.
     */
-  def error(message: String = "An error occurred."): String = {
+  def error(message: String = defaultErrorMessage): String = {
     val response = Map(
       "success" -> JsBoolean(false),
       "message" -> JsString(message)
@@ -38,7 +43,7 @@ object Response {
     *
     * @return Response as JSON string.
     */
-  def json(success: Boolean, data: JsValue = JsObject.empty, message: String = "An error occurred."): String = {
+  def json(success: Boolean, data: JsValue = JsObject.empty, message: String = defaultErrorMessage): String = {
     if (success) this.success(data) else error(message)
   }
 

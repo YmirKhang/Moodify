@@ -49,7 +49,7 @@ class Insight(spotifyService: SpotifyService, userId: String) {
     // Redis does not hold required data. Get top artists from Spotify.
     val topArtists = spotifyService.getTopArtists(timeRange, limit).toList
     val topSimpleArtists = topArtists.map(artist => Converter.artistToSimpleArtist(artist))
-    topSimpleArtists.foreach(simpleArtist => ArtistRepository.saveSimpleArtist(simpleArtist))
+    topSimpleArtists.foreach(simpleArtist => ArtistRepository.setSimpleArtist(simpleArtist))
 
 
     topSimpleArtists
@@ -81,7 +81,7 @@ class Insight(spotifyService: SpotifyService, userId: String) {
     // Redis does not hold required data. Get top tracks from Spotify.
     val topTracks = spotifyService.getTopTracks(timeRange, limit).toList
     val topSimpleTracks = topTracks.map(track => Converter.trackToSimpleTrack(track))
-    topSimpleTracks.foreach(simpleTrack => TrackRepository.saveSimpleTrack(simpleTrack))
+    topSimpleTracks.foreach(simpleTrack => TrackRepository.setSimpleTrack(simpleTrack))
 
     topSimpleTracks
   }

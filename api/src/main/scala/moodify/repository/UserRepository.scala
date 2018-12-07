@@ -40,9 +40,13 @@ object UserRepository {
     */
   def getCountryCode(spotifyService: SpotifyService, userId: String): CountryCode = {
     val maybeCountry = RedisService.get(userCountryRedisKey(userId))
-    val countryCode = if (maybeCountry.isDefined) CountryCode.valueOf(maybeCountry.get) else spotifyService.getCurrentUserCountryCode
-
-    countryCode
+    if (maybeCountry.isDefined) {
+      CountryCode.valueOf(maybeCountry.get)
+    } else {
+      val countryCode = spotifyService.getCurrentUserCountryCode
+      setCountryCode(userId, countryCode)
+      countryCode
+    }
   }
 
   /**
@@ -54,9 +58,13 @@ object UserRepository {
     */
   def getImageUrl(spotifyService: SpotifyService, userId: String): String = {
     val maybeImageUrl = RedisService.get(userImageRedisKey(userId))
-    val imageUrl = if (maybeImageUrl.isDefined) maybeImageUrl.get else spotifyService.getCurrentUserImageUrl
-
-    imageUrl
+    if (maybeImageUrl.isDefined) {
+      maybeImageUrl.get
+    } else {
+      val imageUrl = spotifyService.getCurrentUserImageUrl
+      setImageUrl(userId, imageUrl)
+      imageUrl
+    }
   }
 
   /**

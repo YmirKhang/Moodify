@@ -33,7 +33,7 @@ object ArtistRepository {
       val spotify = new SpotifyService
       val artist = spotify.getArtist(artistId)
       val simpleArtist = Converter.artistToSimpleArtist(artist)
-      saveSimpleArtist(simpleArtist)
+      setSimpleArtist(simpleArtist)
       simpleArtist
     }
   }
@@ -43,7 +43,7 @@ object ArtistRepository {
     *
     * @param simpleArtist SimpleArtist
     */
-  def saveSimpleArtist(simpleArtist: SimpleArtist): Unit = {
+  def setSimpleArtist(simpleArtist: SimpleArtist): Unit = {
     val key = artistRedisKey(simpleArtist.id)
     val map = Converter.simpleArtistToMap(simpleArtist)
     RedisService.hmset(key, map, artistRedisTTL)

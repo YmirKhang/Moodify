@@ -33,7 +33,7 @@ object TrackRepository {
       val spotify = new SpotifyService
       val track = spotify.getTrack(trackId)
       val simpleTrack = Converter.trackToSimpleTrack(track)
-      saveSimpleTrack(simpleTrack)
+      setSimpleTrack(simpleTrack)
       simpleTrack
     }
   }
@@ -43,7 +43,7 @@ object TrackRepository {
     *
     * @param simpleTrack SimpleTrack
     */
-  def saveSimpleTrack(simpleTrack: SimpleTrack): Unit = {
+  def setSimpleTrack(simpleTrack: SimpleTrack): Unit = {
     val key = trackRedisKey(simpleTrack.id)
     val map = Converter.simpleTrackToMap(simpleTrack)
     RedisService.hmset(key, map, trackRedisTTL)
