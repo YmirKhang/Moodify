@@ -14,7 +14,7 @@ object UserRepository {
   /**
     * Get Redis key for user.
     *
-    * @param userId User's Moodify ID.
+    * @param userId Spotify User ID.
     * @return Redis key.
     */
   private def userRedisKey(userId: String): String = s"user:$userId"
@@ -23,7 +23,7 @@ object UserRepository {
     * Get user data for given user.
     *
     * @param spotify User authorized Spotify service.
-    * @param userId  User's Moodify ID.
+    * @param userId  Spotify User ID.
     * @return UserProfile
     */
   def getUser(spotify: SpotifyService, userId: String): UserProfile = {
@@ -47,7 +47,7 @@ object UserRepository {
     * Saves given `userProfile` data in Redis.
     *
     * @param userProfile UserProfile
-    * @param userId      User's Moodify ID.
+    * @param userId      Spotify User ID.
     */
   def setUser(userProfile: UserProfile, userId: String): Unit = {
     val key = userRedisKey(userId)

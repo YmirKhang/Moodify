@@ -51,24 +51,25 @@ object Boot extends Config {
           }
         } ~
         /*
-         * GET /authenticate/user/{user-id}/code/{code}
+         * GET /authenticate/user/{udid}/code/{code}
          * Authenticate given user with given Spotify code.
          */
-        pathPrefix("authenticate" / "user" / Segment / "code" / Segment) { (userId: String, code: String) =>
+        pathPrefix("authenticate" / "user" / Segment / "code" / Segment) { (udid: String, code: String) =>
           pathEndOrSingleSlash {
             get {
-              val success = Identification.authenticate(userId, code)
+              val success = Identification.authenticate(udid, code)
               complete(Response.json(success))
             }
           }
         } ~
         /*
-         * GET /user/{user-id}
+         * GET /user/{udid}
          * Endpoints with Authorization.
          */
-        pathPrefix("user" / Segment) { userId: String =>
-          val maybeAccessToken = Identification.authorize(userId)
+        pathPrefix("user" / Segment) { udid: String =>
+          val maybeAccessToken = Identification.authorize(udid)
           validate(maybeAccessToken.isDefined, Response.error("User is not authorized.")) {
+            val userId = Identification.getUserId(udid).get
             val accessToken = maybeAccessToken.get
             val spotify = new SpotifyService
             spotify.authorize(accessToken)

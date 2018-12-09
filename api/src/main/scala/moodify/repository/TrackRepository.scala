@@ -1,7 +1,7 @@
 package moodify.repository
 
 import moodify.helper.Converter
-import moodify.model.SimpleTrack
+import moodify.model.{SimpleTrack, TrackFeatures}
 import moodify.service.{RedisService, SpotifyService}
 
 object TrackRepository {
@@ -10,6 +10,19 @@ object TrackRepository {
     * TTL for track data in Redis, set as 15 days.
     */
   private val trackRedisTTL: Int = 15 * 86400
+
+  /**
+    * Time to live for track's audio features in Redis.
+    */
+  private val trackAudioRedisTTL = 30 * 86400 // 30 days.
+
+  /**
+    * Redis key for track's audio features.
+    *
+    * @param trackId Track ID.
+    * @return Redis key.
+    */
+  private def trackAudioRedisKey(trackId: String) = s"track:$trackId:audio"
 
   /**
     * Get Redis key for given track.
@@ -47,6 +60,48 @@ object TrackRepository {
     val key = trackRedisKey(simpleTrack.id)
     val map = Converter.simpleTrackToMap(simpleTrack)
     RedisService.hmset(key, map, trackRedisTTL)
+  }
+
+  /**
+    * Get audio features for given track id list.
+    *
+    * First check Redis for given track ids. Then, query Spotify API for remaining tracks.
+    *
+    * @param spotify     Spotify service.
+    * @param trackIdList Track id list.
+    * @return Tracks' audio features.
+    */
+  def getAudioFeatures(spotify: SpotifyService, trackIdList: List[String]): List[TrackFeatures] = {
+    // Fetch audio features from Redis, if available.
+    val redisTrackFeaturesList = trackIdList.flatMap { trackId =>
+      val redisKey = trackAudioRedisKey(trackId)
+      val maybeAudioFeatures = RedisService.hgetall(redisKey)
+      if (maybeAudioFeatures.isDefined) {
+        val audioFeatures = maybeAudioFeatures.get
+        val trendline = Converter.mapToTrendline(audioFeatures)
+        List(TrackFeatures(trackId, trendline))
+      }
+      // Audio features for current track is not available in Redis.
+      else List()
+    }
+
+    // Separate tracks with no audio feature data.
+    val redisTrackIdList = redisTrackFeaturesList.map(track => track.trackId)
+    val newTrackIdList = trackIdList.diff(redisTrackIdList)
+
+    // Get new tracks' audio features from Spotify.
+    val spotifyTrackFeatureList = spotify.getAudioFeatures(newTrackIdList)
+
+    // Save new tracks' audio features to Redis for future reference.
+    spotifyTrackFeatureList.foreach { trackFeatures =>
+      val trackId = trackFeatures.trackId
+      val redisKey = trackAudioRedisKey(trackId)
+      val trendlineMap = Converter.trendlineToMap(trackFeatures.trendline)
+      RedisService.hmset(redisKey, trendlineMap, trackAudioRedisTTL)
+    }
+
+    // TODO: This concatenation does not preserve the order of `trackIdList`. Fix this.
+    redisTrackFeaturesList ++ spotifyTrackFeatureList
   }
 
 }

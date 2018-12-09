@@ -8,20 +8,15 @@ import moodify.service.{RedisService, SpotifyService}
 /**
   * Processes user's Spotify data and retrieves insights about user's behaviour.
   *
-  * @param spotifyService Authenticated Spotify service.
-  * @param userId         Moodify User ID.
+  * @param spotify Authenticated Spotify service.
+  * @param userId  Spotify User ID.
   */
-class Insight(spotifyService: SpotifyService, userId: String) {
+class Insight(spotify: SpotifyService, userId: String) {
 
   /**
     * Time to live for user's trendline data in Redis.
     */
   private val userTrendlineTTL = 5 * 60 // 5 minutes.
-
-  /**
-    * Time to live for track's trendline data in Redis.
-    */
-  private val trackFeaturesTTL = 30 * 86400 // 30 days.
 
   /**
     * Get top artists of current user.
@@ -47,7 +42,7 @@ class Insight(spotifyService: SpotifyService, userId: String) {
     }
 
     // Redis does not hold required data. Get top artists from Spotify.
-    val topArtists = spotifyService.getTopArtists(timeRange, limit).toList
+    val topArtists = spotify.getTopArtists(timeRange, limit).toList
     val topSimpleArtists = topArtists.map(artist => Converter.artistToSimpleArtist(artist))
     topSimpleArtists.foreach(simpleArtist => ArtistRepository.setSimpleArtist(simpleArtist))
 
@@ -79,7 +74,7 @@ class Insight(spotifyService: SpotifyService, userId: String) {
     }
 
     // Redis does not hold required data. Get top tracks from Spotify.
-    val topTracks = spotifyService.getTopTracks(timeRange, limit).toList
+    val topTracks = spotify.getTopTracks(timeRange, limit).toList
     val topSimpleTracks = topTracks.map(track => Converter.trackToSimpleTrack(track))
     topSimpleTracks.foreach(simpleTrack => TrackRepository.setSimpleTrack(simpleTrack))
 
@@ -103,9 +98,9 @@ class Insight(spotifyService: SpotifyService, userId: String) {
     }
 
     // Redis does not hold required data. Generate user's trendline.
-    val recentTracks = spotifyService.getRecentTracks(numTracks)
+    val recentTracks = spotify.getRecentTracks(numTracks)
     val recentTracksIdList = recentTracks.map(track => track.getTrack.getId).toList
-    val trackFeatureList = getAudioFeatures(recentTracksIdList)
+    val trackFeatureList = TrackRepository.getAudioFeatures(spotify, recentTracksIdList)
 
     val trendlineList = trackFeatureList.map(track => track.trendline)
     val zeroTrendline = Trendline(0, 0, 0, 0, 0, 0, 0)
@@ -127,45 +122,6 @@ class Insight(spotifyService: SpotifyService, userId: String) {
     RedisService.hmset(redisKey, Converter.trendlineToMap(avgTrendline), userTrendlineTTL)
 
     avgTrendline
-  }
-
-  /**
-    * Get audio features for given track id list.
-    *
-    * First check Redis for given track ids. Then, query Spotify API for remaining tracks.
-    *
-    * @param trackIdList Track id list.
-    * @return Tracks' audio features.
-    */
-  private def getAudioFeatures(trackIdList: List[String]): List[TrackFeatures] = {
-    // Fetch audio features from Redis, if available.
-    val redisTrackFeaturesList = trackIdList.flatMap { trackId =>
-      val redisKey = s"track:$trackId:audio"
-      val maybeAudioFeatures = RedisService.hgetall(redisKey)
-      if (maybeAudioFeatures.isDefined) {
-        val audioFeatures = maybeAudioFeatures.get
-        val trendline = Converter.mapToTrendline(audioFeatures)
-        List(TrackFeatures(trackId, trendline))
-      }
-      // Audio features for current track is not available in Redis.
-      else List()
-    }
-
-    // Separate tracks with no audio feature data.
-    val redisTrackIdList = redisTrackFeaturesList.map(track => track.trackId)
-    val newTrackIdList = trackIdList.diff(redisTrackIdList)
-
-    // Get new tracks' audio features from Spotify.
-    val spotifyTrackFeatureList = spotifyService.getAudioFeatures(newTrackIdList)
-
-    // Save new tracks' audio features to Redis for future reference.
-    spotifyTrackFeatureList.foreach { trackFeatures =>
-      val trendlineMap = Converter.trendlineToMap(trackFeatures.trendline)
-      RedisService.hmset(trackFeatures.trackId, trendlineMap, trackFeaturesTTL)
-    }
-
-    // TODO: This concatenation does not preserve the order of `trackIdList`. Fix this.
-    redisTrackFeaturesList ++ spotifyTrackFeatureList
   }
 
 }
