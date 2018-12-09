@@ -2,7 +2,7 @@ package moodify
 
 import com.typesafe.config.ConfigFactory
 
-trait Config {
+object Config {
 
   /**
     * Environment that app is running on.

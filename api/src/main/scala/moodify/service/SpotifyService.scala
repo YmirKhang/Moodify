@@ -8,7 +8,7 @@ import com.typesafe.scalalogging.LazyLogging
 import com.wrapper.spotify.SpotifyApi
 import com.wrapper.spotify.model_objects.credentials.AuthorizationCodeCredentials
 import com.wrapper.spotify.model_objects.specification._
-import moodify.Config
+import moodify.Config._
 import moodify.model.{RecommendationPreferences, TimeRange, TrackFeatures, Trendline}
 import spray.json.DefaultJsonProtocol._
 import spray.json._
@@ -16,7 +16,7 @@ import spray.json._
 /**
   * Communicates with Spotify API for authenticated user.
   */
-class SpotifyService extends Config with LazyLogging {
+class SpotifyService extends LazyLogging {
 
   /**
     * Spotify API wrapper instance.
@@ -329,21 +329,61 @@ class SpotifyService extends Config with LazyLogging {
     * @param maybeMarket Market availability.
     * @return Recommended tracks.
     */
-  def getRecommendations(preferences: RecommendationPreferences, limit: Int, maybeMarket: Option[CountryCode] = None): Array[TrackSimplified] = {
+  def getRecommendations(preferences: RecommendationPreferences, limit: Int,
+                         maybeMarket: Option[CountryCode] = None): Array[TrackSimplified] = {
+
     val request = spotifyApi
       .getRecommendations
       .limit(limit)
 
-    if (maybeMarket.isDefined) request.market(maybeMarket.get)
-    if (preferences.seedArtistIdList.isDefined) request.seed_artists(preferences.seedArtistIdList.get.mkString(","))
-    if (preferences.seedTrackIdList.isDefined) request.seed_tracks(preferences.seedTrackIdList.get.mkString(","))
-    if (preferences.acousticness.isDefined) request.target_acousticness(preferences.acousticness.get.toFloat)
-    if (preferences.instrumentalness.isDefined) request.target_instrumentalness(preferences.instrumentalness.get.toFloat)
-    if (preferences.speechiness.isDefined) request.target_speechiness(preferences.speechiness.get.toFloat)
-    if (preferences.danceability.isDefined) request.target_danceability(preferences.danceability.get.toFloat)
-    if (preferences.liveness.isDefined) request.target_liveness(preferences.liveness.get.toFloat)
-    if (preferences.energy.isDefined) request.target_energy(preferences.energy.get.toFloat)
-    if (preferences.valence.isDefined) request.target_valence(preferences.valence.get.toFloat)
+    if (maybeMarket.isDefined) {
+      request.market(maybeMarket.get)
+    }
+
+    if (preferences.seedArtistIdList.isDefined) {
+      val seedArtists = preferences.seedArtistIdList.get.mkString(",")
+      request.seed_artists(seedArtists)
+    }
+
+    if (preferences.seedTrackIdList.isDefined) {
+      val seedTracks = preferences.seedTrackIdList.get.mkString(",")
+      request.seed_tracks(seedTracks)
+    }
+
+    if (preferences.acousticness.isDefined) {
+      val target = preferences.acousticness.get.toFloat
+      request.target_acousticness(target)
+    }
+
+    if (preferences.instrumentalness.isDefined) {
+      val target = preferences.instrumentalness.get.toFloat
+      request.target_instrumentalness(target)
+    }
+
+    if (preferences.speechiness.isDefined) {
+      val target = preferences.speechiness.get.toFloat
+      request.target_speechiness(target)
+    }
+
+    if (preferences.danceability.isDefined) {
+      val target = preferences.danceability.get.toFloat
+      request.target_danceability(target)
+    }
+
+    if (preferences.liveness.isDefined) {
+      val target = preferences.liveness.get.toFloat
+      request.target_liveness(target)
+    }
+
+    if (preferences.energy.isDefined) {
+      val target = preferences.energy.get.toFloat
+      request.target_energy(target)
+    }
+
+    if (preferences.valence.isDefined) {
+      val target = preferences.valence.get.toFloat
+      request.target_valence(target)
+    }
 
     val recommendations = request
       .build

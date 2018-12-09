@@ -1,12 +1,12 @@
 package moodify.service
 
 import com.redis.{RedisClientPool, Seconds}
-import moodify.Config
+import moodify.Config._
 
 /**
   * Redis service to provide an interface/abstraction for Redis accesses.
   */
-object RedisService extends Config {
+object RedisService {
 
   /**
     * Pool connection for Redis instance.

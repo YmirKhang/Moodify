@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Directives.{complete, get, path, pathEndOrSingleSlash, _}
 import akka.stream.ActorMaterializer
-import moodify.Config
+import moodify.Config._
 import moodify.core.{Identification, Insight, Recommendation}
 import moodify.model.RecommendationPreferencesProtocol._
 import moodify.model.SimpleArtistProtocol._
@@ -19,7 +19,7 @@ import spray.json._
 import scala.concurrent.ExecutionContextExecutor
 import scala.util.Try
 
-object Boot extends Config {
+object Boot {
 
   implicit val system: akka.actor.ActorSystem = ActorSystem("Moodify")
   implicit val executor: ExecutionContextExecutor = system.dispatcher
