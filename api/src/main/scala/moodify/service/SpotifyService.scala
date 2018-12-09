@@ -330,20 +330,20 @@ class SpotifyService extends Config with LazyLogging {
     * @return Recommended tracks.
     */
   def getRecommendations(preferences: RecommendationPreferences, limit: Int, maybeMarket: Option[CountryCode] = None): Array[TrackSimplified] = {
-    var request = spotifyApi
+    val request = spotifyApi
       .getRecommendations
       .limit(limit)
 
-    if (maybeMarket.isDefined) request = request.market(maybeMarket.get)
-    if (preferences.seedArtistIdList.isDefined) request = request.seed_artists(preferences.seedArtistIdList.get.mkString(","))
-    if (preferences.seedTrackIdList.isDefined) request = request.seed_tracks(preferences.seedTrackIdList.get.mkString(","))
-    if (preferences.acousticness.isDefined) request = request.target_acousticness(preferences.acousticness.get.toFloat)
-    if (preferences.instrumentalness.isDefined) request = request.target_instrumentalness(preferences.instrumentalness.get.toFloat)
-    if (preferences.speechiness.isDefined) request = request.target_speechiness(preferences.speechiness.get.toFloat)
-    if (preferences.danceability.isDefined) request = request.target_danceability(preferences.danceability.get.toFloat)
-    if (preferences.liveness.isDefined) request = request.target_liveness(preferences.liveness.get.toFloat)
-    if (preferences.energy.isDefined) request = request.target_energy(preferences.energy.get.toFloat)
-    if (preferences.valence.isDefined) request = request.target_valence(preferences.valence.get.toFloat)
+    if (maybeMarket.isDefined) request.market(maybeMarket.get)
+    if (preferences.seedArtistIdList.isDefined) request.seed_artists(preferences.seedArtistIdList.get.mkString(","))
+    if (preferences.seedTrackIdList.isDefined) request.seed_tracks(preferences.seedTrackIdList.get.mkString(","))
+    if (preferences.acousticness.isDefined) request.target_acousticness(preferences.acousticness.get.toFloat)
+    if (preferences.instrumentalness.isDefined) request.target_instrumentalness(preferences.instrumentalness.get.toFloat)
+    if (preferences.speechiness.isDefined) request.target_speechiness(preferences.speechiness.get.toFloat)
+    if (preferences.danceability.isDefined) request.target_danceability(preferences.danceability.get.toFloat)
+    if (preferences.liveness.isDefined) request.target_liveness(preferences.liveness.get.toFloat)
+    if (preferences.energy.isDefined) request.target_energy(preferences.energy.get.toFloat)
+    if (preferences.valence.isDefined) request.target_valence(preferences.valence.get.toFloat)
 
     val recommendations = request
       .build
