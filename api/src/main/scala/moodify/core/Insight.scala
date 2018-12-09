@@ -19,6 +19,33 @@ class Insight(spotify: SpotifyService, userId: String) {
   private val userTrendlineTTL = 5 * 60 // 5 minutes.
 
   /**
+    * Redis key for trendline for given user.
+    *
+    * @param userId    Spotify User ID.
+    * @param numTracks Number of tracks for trendline.
+    * @return Redis key.
+    */
+  private def trendlineRedisKey(userId: String, numTracks: Int) = s"user:$userId:trendline:$numTracks"
+
+  /**
+    * Redis key for top tracks of given user in given time range.
+    *
+    * @param userId    Spotify User ID.
+    * @param timeRange Time range for top tracks.
+    * @return Redis key.
+    */
+  private def topTracksRedisKey(userId: String, timeRange: TimeRange.Value) = s"user:$userId:top:track:$timeRange"
+
+  /**
+    * Redis key for top artists of given user in given time range.
+    *
+    * @param userId    Spotify User ID.
+    * @param timeRange Time range for top artists.
+    * @return Redis key.
+    */
+  private def topArtistsRedisKey(userId: String, timeRange: TimeRange.Value) = s"user:$userId:top:artist:$timeRange"
+
+  /**
     * Get top artists of current user.
     *
     * @param timeRange Time range for operation.
@@ -26,10 +53,10 @@ class Insight(spotify: SpotifyService, userId: String) {
     * @return Top artists.
     */
   def getTopArtists(timeRange: TimeRange.Value, limit: Int): List[SimpleArtist] = {
-    val userRedisKey = s"user:$userId:top:artist:$timeRange"
+    val redisKey = topArtistsRedisKey(userId, timeRange)
 
     // Get user's top artist id list from Redis. If size is enough get artist data and return.
-    val maybeTopArtistIdList = RedisService.lrange(userRedisKey, size = limit)
+    val maybeTopArtistIdList = RedisService.lrange(redisKey, size = limit)
     if (maybeTopArtistIdList.isDefined) {
       val topArtistIdList = maybeTopArtistIdList.get
         .map(maybeArtistId => maybeArtistId.getOrElse(""))
@@ -58,10 +85,10 @@ class Insight(spotify: SpotifyService, userId: String) {
     * @return Top tracks.
     */
   def getTopTracks(timeRange: TimeRange.Value, limit: Int): List[SimpleTrack] = {
-    val userRedisKey = s"user:$userId:top:track:$timeRange"
+    val redisKey = topTracksRedisKey(userId, timeRange)
 
     // Get user's top track id list from Redis. If size is enough get track data and return.
-    val maybeTopTrackIdList = RedisService.lrange(userRedisKey, size = limit)
+    val maybeTopTrackIdList = RedisService.lrange(redisKey, size = limit)
     if (maybeTopTrackIdList.isDefined) {
       val topTrackIdList = maybeTopTrackIdList.get
         .map(maybeTrackId => maybeTrackId.getOrElse(""))
@@ -88,7 +115,7 @@ class Insight(spotify: SpotifyService, userId: String) {
     * @return User's Trendline.
     */
   def getTrendline(numTracks: Int): Trendline = {
-    val redisKey = s"user:$userId:trendline:$numTracks"
+    val redisKey = trendlineRedisKey(userId, numTracks)
 
     // Get specified trendline from Redis.
     val maybeTrendline = RedisService.hgetall(redisKey)
