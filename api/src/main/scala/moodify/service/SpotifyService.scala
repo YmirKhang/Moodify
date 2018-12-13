@@ -279,6 +279,20 @@ class SpotifyService extends LazyLogging {
   }
 
   /**
+    * Changes the cover image of given playlist of current user.
+    *
+    * @param playlistId Spotify ID of the playlist.
+    * @param imageData  Base 64 encoded image data.
+    */
+  def changePlaylistCoverImage(playlistId: String, imageData: String): Unit = {
+    spotifyApi
+      .uploadCustomPlaylistCoverImage(getCurrentUserId, playlistId)
+      .image_data(imageData)
+      .build
+      .execute
+  }
+
+  /**
     * Deletes all tracks of current user's given playlist.
     *
     * @param playlistId Spotify ID of the playlist.

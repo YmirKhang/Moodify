@@ -2,6 +2,7 @@ package moodify.api
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.server.Directives.{complete, get, path, pathEndOrSingleSlash, _}
 import akka.stream.ActorMaterializer
 import moodify.Config._
@@ -11,7 +12,7 @@ import moodify.model.SimpleArtistProtocol._
 import moodify.model.SimpleTrackProtocol._
 import moodify.model.TrendlineProtocol._
 import moodify.model.UserProfileProtocol._
-import moodify.model.{RecommendationPreferences, Response, TimeRange}
+import moodify.model.{RecommendationPreferences, TimeRange}
 import moodify.repository.UserRepository
 import moodify.service.SpotifyService
 import spray.json._

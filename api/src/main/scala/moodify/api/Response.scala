@@ -1,7 +1,7 @@
-package moodify.model
+package moodify.api
 
 import spray.json.DefaultJsonProtocol._
-import spray.json._
+import spray.json.{JsBoolean, JsObject, JsString, JsValue}
 
 object Response {
 
