@@ -127,7 +127,7 @@ class Insight(spotify: SpotifyService, userId: String) {
     // Redis does not hold required data. Generate user's trendline.
     val recentTracks = spotify.getRecentTracks(numTracks)
     val recentTracksIdList = recentTracks.map(track => track.getTrack.getId).toList
-    val trackFeatureList = TrackRepository.getAudioFeatures(spotify, recentTracksIdList)
+    val trackFeatureList = TrackRepository.getAudioFeatures(recentTracksIdList)
 
     val trendlineList = trackFeatureList.map(track => track.trendline)
     val zeroTrendline = Trendline(0, 0, 0, 0, 0, 0, 0)

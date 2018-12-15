@@ -6,7 +6,7 @@ import com.google.gson.JsonParser
 import com.neovisionaries.i18n.CountryCode
 import com.typesafe.scalalogging.LazyLogging
 import com.wrapper.spotify.SpotifyApi
-import com.wrapper.spotify.model_objects.credentials.AuthorizationCodeCredentials
+import com.wrapper.spotify.model_objects.credentials.{AuthorizationCodeCredentials, ClientCredentials}
 import com.wrapper.spotify.model_objects.specification._
 import moodify.Config._
 import moodify.model.{RecommendationPreferences, TimeRange, TrackFeatures, Trendline}
@@ -46,6 +46,20 @@ class SpotifyService extends LazyLogging {
         logger.error(exception.getMessage)
         None
     }
+  }
+
+  /**
+    * Authenticate the application for basic queries.
+    *
+    * @return Client Credentials.
+    */
+  def authenticateApp(): ClientCredentials = {
+    val clientCredentials = spotifyApi
+      .clientCredentials
+      .build
+      .execute
+
+    clientCredentials
   }
 
   /**
@@ -243,6 +257,21 @@ class SpotifyService extends LazyLogging {
       .find(playlist => playlist.getName == playlistName)
 
     maybePlaylist
+  }
+
+  /**
+    * Get related artists of a given artist.
+    *
+    * @param artistId Artist's Spotify ID.
+    * @return List of related artists.
+    */
+  def getRelatedArtists(artistId: String): Array[Artist] = {
+    val artists = spotifyApi
+      .getArtistsRelatedArtists(artistId)
+      .build
+      .execute
+
+    artists
   }
 
   /**

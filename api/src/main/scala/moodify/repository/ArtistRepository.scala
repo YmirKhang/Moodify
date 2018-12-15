@@ -1,8 +1,9 @@
 package moodify.repository
 
+import moodify.core.ClientCredentials
 import moodify.helper.Converter
 import moodify.model.SimpleArtist
-import moodify.service.{RedisService, SpotifyService}
+import moodify.service.RedisService
 
 object ArtistRepository {
 
@@ -30,7 +31,7 @@ object ArtistRepository {
     if (maybeSimpleArtist.isDefined) {
       Converter.mapToSimpleArtist(maybeSimpleArtist.get)
     } else {
-      val spotify = new SpotifyService
+      val spotify = ClientCredentials.getAuthorizedSpotifyService
       val artist = spotify.getArtist(artistId)
       val simpleArtist = Converter.artistToSimpleArtist(artist)
       setSimpleArtist(simpleArtist)

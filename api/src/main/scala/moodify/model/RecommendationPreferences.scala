@@ -3,7 +3,7 @@ package moodify.model
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 
 case class RecommendationPreferences(
-                                      seedArtistIdList: Option[List[String]],
+                                      var seedArtistIdList: Option[List[String]],
                                       seedTrackIdList: Option[List[String]],
                                       acousticness: Option[Double],
                                       instrumentalness: Option[Double],

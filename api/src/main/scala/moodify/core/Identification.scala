@@ -2,6 +2,7 @@ package moodify.core
 
 import com.typesafe.scalalogging.LazyLogging
 import com.wrapper.spotify.model_objects.credentials.AuthorizationCodeCredentials
+import moodify.Config.TOKEN_TTL_MARGIN
 import moodify.service.{RedisService, SpotifyService}
 
 /**
@@ -123,7 +124,7 @@ object Identification extends LazyLogging {
   private def updateCredentials(userId: String, credentials: AuthorizationCodeCredentials): Boolean = {
     val accessToken = credentials.getAccessToken
     val refreshToken = credentials.getRefreshToken
-    val accessTokenTTL = credentials.getExpiresIn
+    val accessTokenTTL = credentials.getExpiresIn - TOKEN_TTL_MARGIN
 
     try {
       RedisService.set(accessTokenKey(userId), accessToken, accessTokenTTL)

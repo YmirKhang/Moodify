@@ -1,8 +1,9 @@
 package moodify.repository
 
+import moodify.core.ClientCredentials
 import moodify.helper.Converter
 import moodify.model.{SimpleTrack, TrackFeatures}
-import moodify.service.{RedisService, SpotifyService}
+import moodify.service.RedisService
 
 object TrackRepository {
 
@@ -43,7 +44,7 @@ object TrackRepository {
     if (maybeSimpleTrack.isDefined) {
       Converter.mapToSimpleTrack(maybeSimpleTrack.get)
     } else {
-      val spotify = new SpotifyService
+      val spotify = ClientCredentials.getAuthorizedSpotifyService
       val track = spotify.getTrack(trackId)
       val simpleTrack = Converter.trackToSimpleTrack(track)
       setSimpleTrack(simpleTrack)
@@ -67,11 +68,10 @@ object TrackRepository {
     *
     * First check Redis for given track ids. Then, query Spotify API for remaining tracks.
     *
-    * @param spotify     Spotify service.
     * @param trackIdList Track id list.
     * @return Tracks' audio features.
     */
-  def getAudioFeatures(spotify: SpotifyService, trackIdList: List[String]): List[TrackFeatures] = {
+  def getAudioFeatures(trackIdList: List[String]): List[TrackFeatures] = {
     // Fetch audio features from Redis, if available.
     val redisTrackFeaturesList = trackIdList.flatMap { trackId =>
       val redisKey = trackAudioRedisKey(trackId)
@@ -90,6 +90,7 @@ object TrackRepository {
     val newTrackIdList = trackIdList.diff(redisTrackIdList)
 
     // Get new tracks' audio features from Spotify.
+    val spotify = ClientCredentials.getAuthorizedSpotifyService
     val spotifyTrackFeatureList = spotify.getAudioFeatures(newTrackIdList)
 
     // Save new tracks' audio features to Redis for future reference.

@@ -7,6 +7,7 @@ import moodify.service.SpotifyService
 
 import scala.collection.mutable
 import scala.io.Source
+import scala.util.Random
 
 class Recommendation(spotify: SpotifyService, userId: String) extends LazyLogging {
 
@@ -21,6 +22,11 @@ class Recommendation(spotify: SpotifyService, userId: String) extends LazyLoggin
   private val playlistPublicity = true
 
   /**
+    * Maximum seeds that can be used for recommendations, set by Spotify.
+    */
+  private val seedLimit = 5
+
+  /**
     * Creates a playlist with given preferences and limit for given user.
     *
     * @param preferences Preferences for recommended tracks.
@@ -31,9 +37,10 @@ class Recommendation(spotify: SpotifyService, userId: String) extends LazyLoggin
     try {
       val userProfile = UserRepository.getUser(spotify, userId)
       val maybeMarket = Some(userProfile.countryCode)
-      val recommendedTracks = spotify.getRecommendations(preferences, limit, maybeMarket)
+      val enrichedPreferences = enrichPreferences(preferences)
+      val recommendedTracks = spotify.getRecommendations(enrichedPreferences, limit, maybeMarket)
       val recommendedTracksUriArray = recommendedTracks.map(track => track.getUri)
-      val description = getDescription(preferences)
+      val description = getDescription(enrichedPreferences)
       val playlistId = prepareFreshPlaylist(description)
       spotify.addTracksToPlaylist(playlistId, recommendedTracksUriArray)
       true
@@ -41,6 +48,7 @@ class Recommendation(spotify: SpotifyService, userId: String) extends LazyLoggin
     catch {
       case exception: Throwable =>
         logger.error(exception.getMessage)
+        logger.error(exception.getStackTrace.toList.toString)
         false
     }
   }
@@ -70,6 +78,36 @@ class Recommendation(spotify: SpotifyService, userId: String) extends LazyLoggin
     }
 
     playlistId
+  }
+
+  /**
+    * Enriches given recommendation preferences for user by filling up till 5 seed preference, if missing.
+    *
+    * @param preferences RecommendationPreferences
+    * @return Enriched RecommendationPreferences
+    */
+  private def enrichPreferences(preferences: RecommendationPreferences): RecommendationPreferences = {
+    val seedArtistsIdList = preferences.seedArtistIdList.getOrElse(List[String]())
+    val seedTrackIdList = preferences.seedTrackIdList.getOrElse(List[String]())
+    val numSeeds = seedArtistsIdList.length + seedTrackIdList.length
+
+    if (numSeeds < seedLimit) {
+      val necessaryArtistCount = seedLimit - numSeeds
+      // Get artist id list by provided seeds. Prefer artist seed.
+      val artistIdList = if (seedArtistsIdList.nonEmpty) {
+        seedArtistsIdList
+      } else {
+        seedTrackIdList.map(trackId => TrackRepository.getSimpleTrack(trackId).artists.head.id)
+      }
+      // Find related artists and add them to the preferences by picking randomly.
+      val artists = artistIdList.flatMap(artistId => spotify.getRelatedArtists(artistId))
+      val pickedArtists = Random.shuffle(artists).take(necessaryArtistCount)
+      val pickedArtistIdList = pickedArtists.map(artist => artist.getId)
+
+      preferences.seedArtistIdList = Some(seedArtistsIdList.union(pickedArtistIdList))
+    }
+
+    preferences
   }
 
   /**

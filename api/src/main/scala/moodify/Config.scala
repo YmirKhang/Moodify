@@ -72,4 +72,9 @@ object Config {
     */
   val NEW_PLAYLIST_SIZE: Int = config.getInt("SPOTIFY.NEW_PLAYLIST_SIZE")
 
+  /**
+    * Margin in seconds for Spotify tokens that are being reused, to avoid end up with an invalid token.
+    */
+  val TOKEN_TTL_MARGIN: Int = config.getInt("SPOTIFY.TOKEN_TTL_MARGIN")
+
 }
