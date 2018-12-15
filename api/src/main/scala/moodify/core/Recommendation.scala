@@ -1,11 +1,11 @@
 package moodify.core
 
 import com.typesafe.scalalogging.LazyLogging
+import moodify.helper.DescriptionBuilder
 import moodify.model.RecommendationPreferences
-import moodify.repository.{ArtistRepository, TrackRepository, UserRepository}
+import moodify.repository.{TrackRepository, UserRepository}
 import moodify.service.SpotifyService
 
-import scala.collection.mutable
 import scala.io.Source
 import scala.util.Random
 
@@ -40,7 +40,7 @@ class Recommendation(spotify: SpotifyService, userId: String) extends LazyLoggin
       val enrichedPreferences = enrichPreferences(preferences)
       val recommendedTracks = spotify.getRecommendations(enrichedPreferences, limit, maybeMarket)
       val recommendedTracksUriArray = recommendedTracks.map(track => track.getUri)
-      val description = getDescription(enrichedPreferences)
+      val description = DescriptionBuilder.getDescription(enrichedPreferences)
       val playlistId = prepareFreshPlaylist(description)
       spotify.addTracksToPlaylist(playlistId, recommendedTracksUriArray)
       true
@@ -62,7 +62,6 @@ class Recommendation(spotify: SpotifyService, userId: String) extends LazyLoggin
     */
   private def prepareFreshPlaylist(description: String): String = {
     val maybePlaylist = spotify.getCurrentUsersPlaylist(playlistName)
-
     val playlistId = {
       if (maybePlaylist.isDefined) {
         val playlistId = maybePlaylist.get.getId
@@ -110,42 +109,5 @@ class Recommendation(spotify: SpotifyService, userId: String) extends LazyLoggin
     preferences
   }
 
-  /**
-    * Get description for playlist with given preferences.
-    *
-    * @param preferences Recommendation preferences.
-    * @return Playlist description.
-    */
-  private def getDescription(preferences: RecommendationPreferences): String = {
-    val descriptionBuilder = new StringBuilder("Highly personalized with Moodify based on ")
-    val seedList = mutable.ListBuffer[String]()
-
-    if (preferences.seedArtistIdList.isDefined) {
-      val artistIdList = preferences.seedArtistIdList.get
-      val artistNameList = artistIdList.map(artistId => ArtistRepository.getSimpleArtist(artistId).name)
-      artistNameList.foreach(artist => seedList.append(artist))
-    }
-
-    if (preferences.seedTrackIdList.isDefined) {
-      val seedTrackIdList = preferences.seedTrackIdList.get
-      val trackNameList = seedTrackIdList.map(trackId => TrackRepository.getSimpleTrack(trackId).name)
-      trackNameList.foreach(track => seedList.append(track))
-    }
-
-    val listSeparator = ", "
-    var seedString = seedList.mkString("", listSeparator, ". ")
-    if (seedList.length > 1) {
-      val index = seedString.lastIndexOf(listSeparator)
-      val (head, tail) = seedString.splitAt(index)
-      val cleanTail = tail.replace(listSeparator, "")
-      seedString = s"$head and $cleanTail"
-    }
-
-    descriptionBuilder.append(seedString)
-    descriptionBuilder.append("Check https://moodify.app for more")
-    val description = descriptionBuilder.toString
-
-    description
-  }
 
 }
