@@ -162,7 +162,7 @@ object Converter {
     */
   def userProfileToMap(userProfile: UserProfile): Map[String, String] = {
     Map(
-      "username" -> userProfile.username,
+      "userId" -> userProfile.userId,
       "name" -> userProfile.name,
       "imageUrl" -> userProfile.imageUrl,
       "countryCode" -> userProfile.countryCode.getAlpha2
@@ -177,7 +177,7 @@ object Converter {
     */
   def mapToUserProfile(map: Map[String, String]): UserProfile = {
     UserProfile(
-      map("username"),
+      map("userId"),
       map("name"),
       map("imageUrl"),
       CountryCode.valueOf(map("countryCode"))

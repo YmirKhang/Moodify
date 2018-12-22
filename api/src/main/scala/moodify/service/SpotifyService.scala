@@ -7,6 +7,7 @@ import com.neovisionaries.i18n.CountryCode
 import com.typesafe.scalalogging.LazyLogging
 import com.wrapper.spotify.SpotifyApi
 import com.wrapper.spotify.model_objects.credentials.{AuthorizationCodeCredentials, ClientCredentials}
+import com.wrapper.spotify.model_objects.special.SearchResult
 import com.wrapper.spotify.model_objects.specification._
 import moodify.Config._
 import moodify.model.{RecommendationPreferences, TimeRange, TrackFeatures, Trendline}
@@ -118,6 +119,31 @@ class SpotifyService extends LazyLogging {
     */
   def getCurrentUserId: String = {
     getCurrentUser.getId
+  }
+
+  /**
+    * Queries Spotify with given query string for given types.
+    *
+    * @param query       Query string.
+    * @param types       Comma separated type list for search such as artist, track.
+    * @param limit       Number of search result for each type.
+    * @param maybeMarket Market availability.
+    * @return Search result.
+    */
+  def search(query: String, types: String, limit: Int, maybeMarket: Option[CountryCode] = None): SearchResult = {
+    val request = spotifyApi
+      .searchItem(query, types)
+      .limit(limit)
+
+    if (maybeMarket.isDefined) {
+      request.market(maybeMarket.get)
+    }
+
+    val result = request
+      .build
+      .execute
+
+    result
   }
 
   /**

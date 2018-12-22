@@ -33,7 +33,7 @@ object UserRepository {
     } else {
       val user = spotify.getCurrentUser
       val userProfile = UserProfile(
-        username = user.getId,
+        userId = user.getId,
         name = user.getDisplayName,
         imageUrl = user.getImages.head.getUrl,
         countryCode = user.getCountry

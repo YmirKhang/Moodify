@@ -19,6 +19,11 @@ class Insight(spotify: SpotifyService, userId: String) {
   private val userTrendlineTTL = 5 * 60 // 5 minutes.
 
   /**
+    * Time to live for user's top tracks and artists in Redis.
+    */
+  private val userTopListTTL = 1 * 3600 // 1 hour.
+
+  /**
     * Redis key for trendline for given user.
     *
     * @param userId    Spotify User ID.
@@ -73,6 +78,8 @@ class Insight(spotify: SpotifyService, userId: String) {
     val topSimpleArtists = topArtists.map(artist => Converter.artistToSimpleArtist(artist))
     topSimpleArtists.foreach(simpleArtist => ArtistRepository.setSimpleArtist(simpleArtist))
 
+    val topArtistsIdList = topArtists.map(artist => artist.getId)
+    RedisService.rpush(redisKey, topArtistsIdList, userTopListTTL)
 
     topSimpleArtists
   }
@@ -104,6 +111,9 @@ class Insight(spotify: SpotifyService, userId: String) {
     val topTracks = spotify.getTopTracks(timeRange, limit).toList
     val topSimpleTracks = topTracks.map(track => Converter.trackToSimpleTrack(track))
     topSimpleTracks.foreach(simpleTrack => TrackRepository.setSimpleTrack(simpleTrack))
+
+    val topTracksIdList = topTracks.map(track => track.getId)
+    RedisService.rpush(redisKey, topTracksIdList, userTopListTTL)
 
     topSimpleTracks
   }

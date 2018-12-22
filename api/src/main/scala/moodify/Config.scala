@@ -68,6 +68,11 @@ object Config {
   val TOP_ARTIST_TRACK_LIMIT: Int = config.getInt("SPOTIFY.TOP_ARTIST_TRACK_LIMIT")
 
   /**
+    * Limit for search items.
+    */
+  val SEARCH_ITEM_LIMIT: Int = config.getInt("SPOTIFY.SEARCH_ITEM_LIMIT")
+
+  /**
     * Size of newly created playlist.
     */
   val NEW_PLAYLIST_SIZE: Int = config.getInt("SPOTIFY.NEW_PLAYLIST_SIZE")
