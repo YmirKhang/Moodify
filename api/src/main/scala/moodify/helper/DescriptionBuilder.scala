@@ -21,11 +21,9 @@ object DescriptionBuilder {
     */
   def getDescription(preferences: RecommendationPreferences): String = {
     val seedText = getSeedText(preferences)
-    val audioPreferenceText = getAudioPreferenceText(preferences)
 
     val descriptionBuilder = new StringBuilder("Highly personalized with Moodify based on ")
     descriptionBuilder.append(seedText)
-    descriptionBuilder.append(audioPreferenceText)
     descriptionBuilder.append("Check https://moodify.app for more")
     val description = descriptionBuilder.toString.take(characterLimit)
 
@@ -56,85 +54,6 @@ object DescriptionBuilder {
     val seedText = stringifyList(seedListBuffer.toList)
 
     seedText
-  }
-
-  /**
-    * Get description text for audio preferences.
-    *
-    * @param preferences RecommendationPreferences
-    * @return Description text for audio preferences.
-    */
-  private def getAudioPreferenceText(preferences: RecommendationPreferences): String = {
-    val descriptionListBuffer = new ListBuffer[String]()
-
-    if (preferences.acousticness.isDefined) {
-      val target = preferences.acousticness.get.toFloat
-      val level = getTargetLevel(target)
-      val text = s"$level acousticness"
-      descriptionListBuffer.append(text)
-    }
-
-    if (preferences.instrumentalness.isDefined) {
-      val target = preferences.instrumentalness.get.toFloat
-      val level = getTargetLevel(target)
-      val text = s"$level instrumentalness"
-      descriptionListBuffer.append(text)
-    }
-
-    if (preferences.speechiness.isDefined) {
-      val target = preferences.speechiness.get.toFloat
-      val level = getTargetLevel(target)
-      val text = s"$level speechiness"
-      descriptionListBuffer.append(text)
-    }
-
-    if (preferences.danceability.isDefined) {
-      val target = preferences.danceability.get.toFloat
-      val level = getTargetLevel(target)
-      val text = s"$level danceability"
-      descriptionListBuffer.append(text)
-    }
-
-    if (preferences.liveness.isDefined) {
-      val target = preferences.liveness.get.toFloat
-      val level = getTargetLevel(target)
-      val text = s"$level liveness"
-      descriptionListBuffer.append(text)
-    }
-
-    if (preferences.energy.isDefined) {
-      val target = preferences.energy.get.toFloat
-      val level = getTargetLevel(target)
-      val text = s"$level energy"
-      descriptionListBuffer.append(text)
-    }
-
-    if (preferences.valence.isDefined) {
-      val target = preferences.valence.get.toFloat
-      val level = getTargetLevel(target)
-      val text = s"$level valence"
-      descriptionListBuffer.append(text)
-    }
-
-    var audioFeatureDescription = ""
-    if (descriptionListBuffer.nonEmpty) {
-      val audioFeatureString = stringifyList(descriptionListBuffer.toList)
-      audioFeatureDescription = s"Preferred audio features are $audioFeatureString"
-    }
-
-    audioFeatureDescription
-  }
-
-  /**
-    * Get level text for given target value.
-    *
-    * @param target Target value for feature.
-    * @return Level text
-    */
-  private def getTargetLevel(target: Float): String = {
-    if (target <= 0.35) "low"
-    else if (target >= 0.65) "high"
-    else "medium"
   }
 
   /**
