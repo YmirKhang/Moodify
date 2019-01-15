@@ -1,4 +1,4 @@
-package moodify.model
+package moodify.enumeration
 
 object ItemType {
   val ALBUM = "album"

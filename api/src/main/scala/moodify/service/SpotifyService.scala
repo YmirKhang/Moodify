@@ -10,7 +10,8 @@ import com.wrapper.spotify.model_objects.credentials.{AuthorizationCodeCredentia
 import com.wrapper.spotify.model_objects.special.SearchResult
 import com.wrapper.spotify.model_objects.specification._
 import moodify.Config._
-import moodify.model.{RecommendationPreferences, TimeRange, TrackFeatures, Trendline}
+import moodify.enumeration.TimeRange
+import moodify.model.{RecommendationPreferences, TrackFeatures, Trendline}
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 

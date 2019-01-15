@@ -1,4 +1,4 @@
-package moodify.model
+package moodify.enumeration
 
 object TimeRange extends Enumeration {
   type Type = Value

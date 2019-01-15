@@ -7,14 +7,15 @@ import akka.http.scaladsl.server.Directives.{complete, get, path, pathEndOrSingl
 import akka.stream.ActorMaterializer
 import moodify.Config._
 import moodify.core.{Identification, Insight, Recommendation, Search}
+import moodify.enumeration.TimeRange
 import moodify.helper.HTTPHelper
+import moodify.model.RecommendationPreferences
 import moodify.model.RecommendationPreferencesProtocol._
 import moodify.model.SearchResponseProtocol._
 import moodify.model.SimpleArtistProtocol._
 import moodify.model.SimpleTrackProtocol._
 import moodify.model.TrendlineProtocol._
 import moodify.model.UserProfileProtocol._
-import moodify.model.{RecommendationPreferences, TimeRange}
 import moodify.repository.UserRepository
 import moodify.service.SpotifyService
 import spray.json.DefaultJsonProtocol._
@@ -28,7 +29,7 @@ object Boot {
   implicit val system: akka.actor.ActorSystem = ActorSystem("Moodify")
   implicit val executor: ExecutionContextExecutor = system.dispatcher
   implicit val materializer: ActorMaterializer = ActorMaterializer()
-  private val headers: List[RawHeader] = HTTPHelper.getHeaders(ENV)
+  private val headers: List[RawHeader] = HTTPHelper.getHeaders(ENVIRONMENT)
 
   implicit def listJsonWriter[T: JsonWriter]: RootJsonWriter[List[T]] = (list: List[T]) => JsArray(list.map(_.toJson).toVector)
 
@@ -114,7 +115,8 @@ object Boot {
                       pathEndOrSingleSlash {
                         get {
                           val numTracks = numTracksString.toInt
-                          validate(numTracks <= 50, Response.json(success = false, message = "Limit is 50 songs.")) {
+                          validate(numTracks <= SPOTIFY_REQUEST_TRACK_LIMIT,
+                            Response.json(success = false, message = s"Limit is $SPOTIFY_REQUEST_TRACK_LIMIT songs.")) {
                             val insight = new Insight(spotify, userId)
                             val trendline = insight.getTrendline(numTracks)
                             complete(Response.success(data = trendline.toJson))
@@ -151,6 +153,19 @@ object Boot {
                             val simpleTrackList = insight.getTopTracks(maybeTimeRange.get, TOP_ARTIST_TRACK_LIMIT)
                             complete(Response.success(data = simpleTrackList.toJson))
                           }
+                        }
+                      }
+                    } ~
+                    /*
+                       * GET /user/{udid}/default-artists
+                       * Get default artist list for current user's recommendations.
+                       */
+                    pathPrefix("default-artists") {
+                      pathEndOrSingleSlash {
+                        get {
+                          val insight = new Insight(spotify, userId)
+                          val artistList = insight.getRecommendationArtists
+                          complete(Response.success(data = artistList.toJson))
                         }
                       }
                     } ~

@@ -1,8 +1,9 @@
 package moodify.core
 
 import com.typesafe.scalalogging.LazyLogging
-import com.wrapper.spotify.model_objects.specification.Paging
-import moodify.model.{ItemType, SearchResponse}
+import moodify.enumeration.ItemType
+import moodify.helper.Utils
+import moodify.model.SearchResponse
 import moodify.repository.UserRepository
 import moodify.service.SpotifyService
 
@@ -31,33 +32,52 @@ object Search extends LazyLogging {
     val albums = queryResult.getAlbums
     val playlists = queryResult.getPlaylists
 
-    if (isNonEmptyResult(artists)) {
-      result ++= artists.getItems.map(artist => SearchResponse(artist.getName, artist.getId, ItemType.ARTIST))
+    if (Utils.isNonEmptyResult(artists)) {
+      result ++= artists.getItems.map(artist =>
+        SearchResponse(
+          artist.getName,
+          artist.getId,
+          ItemType.ARTIST,
+          Some(Utils.getSquareImageURL(artist.getImages))
+        )
+      )
     }
 
-    if (isNonEmptyResult(tracks)) {
-      result ++= tracks.getItems.map(track => SearchResponse(track.getName, track.getId, ItemType.TRACK, Some(track.getArtists.head.getName)))
+    if (Utils.isNonEmptyResult(tracks)) {
+      result ++= tracks.getItems.map(track =>
+        SearchResponse(
+          track.getName,
+          track.getId,
+          ItemType.TRACK,
+          Some(Utils.getSquareImageURL(track.getAlbum.getImages)),
+          Some(track.getArtists.head.getName)
+        )
+      )
     }
 
-    if (isNonEmptyResult(albums)) {
-      result ++= albums.getItems.map(album => SearchResponse(album.getName, album.getId, ItemType.ALBUM))
+    if (Utils.isNonEmptyResult(albums)) {
+      result ++= albums.getItems.map(album =>
+        SearchResponse(
+          album.getName,
+          album.getId,
+          ItemType.ALBUM,
+          Some(Utils.getSquareImageURL(album.getImages))
+        )
+      )
     }
 
-    if (isNonEmptyResult(playlists)) {
-      result ++= playlists.getItems.map(playlist => SearchResponse(playlist.getName, playlist.getId, ItemType.PLAYLIST))
+    if (Utils.isNonEmptyResult(playlists)) {
+      result ++= playlists.getItems.map(playlist =>
+        SearchResponse(
+          playlist.getName,
+          playlist.getId,
+          ItemType.PLAYLIST,
+          Some(Utils.getSquareImageURL(playlist.getImages))
+        )
+      )
     }
 
     result.toList
-  }
-
-  /**
-    * Checks if given collection is empty or not.
-    *
-    * @param collection Collection of ItemType.
-    * @return True if collection is not empty.
-    */
-  private def isNonEmptyResult[A <: AnyRef](collection: Paging[A]): Boolean = {
-    collection != null && collection.getTotal > 0
   }
 
 }

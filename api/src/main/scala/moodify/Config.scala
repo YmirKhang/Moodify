@@ -1,20 +1,26 @@
 package moodify
 
 import com.typesafe.config.ConfigFactory
+import moodify.enumeration.Environment
 
 object Config {
 
   /**
     * Environment that app is running on.
     */
-  val ENV: String = System.getenv("ENV")
+  private val ENV: String = System.getenv("ENV")
+  val ENVIRONMENT: Environment.Type = ENV match {
+    case "PROD" => Environment.PRODUCTION
+    case "TEST" => Environment.TEST
+    case _ => Environment.TEST
+  }
 
   /**
     * Config file location.
     */
-  private val configFile = ENV match {
-    case "PROD" => "prod.conf"
-    case "TEST" | _ => "test.conf"
+  private val configFile = ENVIRONMENT match {
+    case Environment.PRODUCTION => "prod.conf"
+    case Environment.TEST => "test.conf"
   }
 
   /**
@@ -78,8 +84,23 @@ object Config {
   val NEW_PLAYLIST_SIZE: Int = config.getInt("SPOTIFY.NEW_PLAYLIST_SIZE")
 
   /**
+    * Limit for number of artists for default recommendation list.
+    */
+  val RECOMMENDATION_DEFAULT_ARTISTS_LIMIT: Int = config.getInt("SPOTIFY.RECOMMENDATION_DEFAULT_ARTISTS_LIMIT")
+
+  /**
     * Margin in seconds for Spotify tokens that are being reused, to avoid end up with an invalid token.
     */
   val TOKEN_TTL_MARGIN: Int = config.getInt("SPOTIFY.TOKEN_TTL_MARGIN")
+
+  /**
+    * Maximum number of tracks that can be requested from Spotify API.
+    */
+  val SPOTIFY_REQUEST_TRACK_LIMIT: Int = config.getInt("SPOTIFY.REQUEST_TRACK_LIMIT")
+
+  /**
+    * Client app's localhost URL for testing.
+    */
+  val CLIENT_APP_LOCALHOST: String = config.getString("CLIENT.LOCALHOST")
 
 }

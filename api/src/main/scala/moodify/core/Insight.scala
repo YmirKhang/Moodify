@@ -1,9 +1,14 @@
 package moodify.core
 
+import com.wrapper.spotify.model_objects.specification.ArtistSimplified
+import moodify.Config._
+import moodify.enumeration.{ItemType, TimeRange}
 import moodify.helper.Converter
 import moodify.model._
 import moodify.repository.{ArtistRepository, TrackRepository}
 import moodify.service.{RedisService, SpotifyService}
+
+import scala.reflect.internal.util.Collections.distinctBy
 
 /**
   * Processes user's Spotify data and retrieves insights about user's behaviour.
@@ -159,6 +164,29 @@ class Insight(spotify: SpotifyService, userId: String) {
     RedisService.hmset(redisKey, Converter.trendlineToMap(avgTrendline), userTrendlineTTL)
 
     avgTrendline
+  }
+
+  /**
+    * Get default artist set for current user's recommendations.
+    *
+    * @return List of artists.
+    */
+  def getRecommendationArtists: List[SearchResponse] = {
+    val trackCount = math.min(SPOTIFY_REQUEST_TRACK_LIMIT, RECOMMENDATION_DEFAULT_ARTISTS_LIMIT * 3)
+    val recentTracks = spotify.getRecentTracks(trackCount)
+    val recentArtists = recentTracks.map(track => track.getTrack.getArtists.head).toList
+    val distinctArtists = distinctBy(recentArtists) { artist: ArtistSimplified => artist.getId }
+      .take(RECOMMENDATION_DEFAULT_ARTISTS_LIMIT)
+
+    val recommendationArtists = distinctArtists.map { artist =>
+      SearchResponse(
+        artist.getName,
+        artist.getId,
+        ItemType.ARTIST
+      )
+    }
+
+    recommendationArtists
   }
 
 }
