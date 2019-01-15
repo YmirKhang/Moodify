@@ -145,7 +145,7 @@ class Insight(spotify: SpotifyService, userId: String) {
     val trackFeatureList = TrackRepository.getAudioFeatures(recentTracksIdList)
 
     val trendlineList = trackFeatureList.map(track => track.trendline)
-    val zeroTrendline = Trendline(0, 0, 0, 0, 0, 0, 0)
+    val zeroTrendline = Trendline()
 
     // Take the average of tracks' trendline.
     val avgTrendline = trendlineList.fold(zeroTrendline) { (accum, trendline) =>

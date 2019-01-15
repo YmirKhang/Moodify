@@ -100,7 +100,8 @@ class Recommendation(spotify: SpotifyService, userId: String) extends LazyLoggin
       }
       // Find related artists and add them to the preferences by picking randomly.
       val artists = artistIdList.flatMap(artistId => spotify.getRelatedArtists(artistId))
-      val pickedArtists = Random.shuffle(artists).take(necessaryArtistCount)
+      val candidates = artists.filterNot(artist => seedArtistsIdList.contains(artist.getId))
+      val pickedArtists = Random.shuffle(candidates).take(necessaryArtistCount)
       val pickedArtistIdList = pickedArtists.map(artist => artist.getId)
 
       preferences.seedArtistIdList = Some(seedArtistsIdList.union(pickedArtistIdList))
