@@ -1,0 +1,10 @@
+target/
+project/project
+.idea/
+.idea_modules/
+.DS_Store
+
+/src/main/scala/local/
+/src/main/resources/prod.conf
+/.env
+/src/main/resources/cover-image.txt
