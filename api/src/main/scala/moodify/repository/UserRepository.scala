@@ -4,6 +4,8 @@ import moodify.helper.Converter
 import moodify.model.UserProfile
 import moodify.service.{RedisService, SpotifyService}
 
+import scala.util.Try
+
 object UserRepository {
 
   /**
@@ -35,7 +37,7 @@ object UserRepository {
       val userProfile = UserProfile(
         userId = user.getId,
         name = user.getDisplayName,
-        imageUrl = user.getImages.head.getUrl,
+        imageUrl = Try(user.getImages.head.getUrl).toOption.getOrElse(""),
         countryCode = user.getCountry
       )
       setUser(userProfile, userId)

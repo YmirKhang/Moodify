@@ -5,6 +5,8 @@ import com.wrapper.spotify.model_objects.specification.{Artist, ArtistSimplified
 import moodify.model.{SimpleArtist, SimpleTrack, Trendline, UserProfile}
 import moodify.repository.ArtistRepository
 
+import scala.util.Try
+
 object Converter {
 
   /**
@@ -91,7 +93,7 @@ object Converter {
     SimpleArtist(
       artist.getId,
       artist.getName,
-      artist.getImages.head.getUrl
+      Try(artist.getImages.head.getUrl).toOption.getOrElse("")
     )
   }
 
