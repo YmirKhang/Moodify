@@ -2,8 +2,10 @@ package moodify.api
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.StatusCodes.{BadRequest, NotFound}
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Directives.{complete, get, path, pathEndOrSingleSlash, _}
+import akka.http.scaladsl.server.{RejectionHandler, ValidationRejection}
 import akka.stream.ActorMaterializer
 import moodify.Config._
 import moodify.core.{Identification, Insight, Recommendation, Search}
@@ -32,6 +34,20 @@ object Boot {
   private val headers: List[RawHeader] = HTTPHelper.getHeaders(ENVIRONMENT)
 
   implicit def listJsonWriter[T: JsonWriter]: RootJsonWriter[List[T]] = (list: List[T]) => JsArray(list.map(_.toJson).toVector)
+
+  implicit def rejectionHandler: RejectionHandler =
+    RejectionHandler.newBuilder()
+      .handle { case ValidationRejection(response, _) =>
+        respondWithHeaders(headers) {
+          complete((BadRequest, response))
+        }
+      }
+      .handleNotFound {
+        respondWithHeaders(headers) {
+          complete((NotFound, Response.error("Invalid request.")))
+        }
+      }
+      .result()
 
   def main(args: Array[String]): Unit = {
 
