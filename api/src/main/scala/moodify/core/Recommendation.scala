@@ -70,8 +70,7 @@ class Recommendation(spotify: SpotifyService, userId: String) extends LazyLoggin
         playlistId
       } else {
         val playlist = spotify.createPlaylist(playlistName, description, playlistPublicity)
-        val coverImage = Source.fromResource("cover-image.txt").getLines.toList.head
-        spotify.changePlaylistCoverImage(playlist.getId, coverImage)
+        spotify.changePlaylistCoverImage(playlist.getId, getCoverImage)
         playlist.getId
       }
     }
@@ -110,5 +109,18 @@ class Recommendation(spotify: SpotifyService, userId: String) extends LazyLoggin
     preferences
   }
 
+  /**
+    * Get cover image for playlist.
+    *
+    * @return Cover image encoded in Base64 format.
+    */
+  private def getCoverImage: String = {
+    try {
+      val fileStream = getClass.getResourceAsStream("/cover-image.b64")
+      Source.fromInputStream(fileStream).getLines.toList.head
+    } catch {
+      case _: Throwable => ""
+    }
+  }
 
 }
