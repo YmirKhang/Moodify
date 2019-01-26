@@ -8,3 +8,4 @@ project/project
 /src/main/resources/prod.conf
 /.env
 /src/main/resources/cover-image.b64
+/scripts/

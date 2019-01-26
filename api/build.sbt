@@ -24,3 +24,5 @@ libraryDependencies ++= Seq(
 mainClass in (Compile, packageBin) := Some("moodify.api.Boot")
 
 mainClass in (Compile, run) := Some("moodify.api.Boot")
+
+assemblyJarName in assembly := s"${name.value}.jar"
