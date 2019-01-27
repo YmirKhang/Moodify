@@ -99,8 +99,8 @@ object Config {
   val SPOTIFY_REQUEST_TRACK_LIMIT: Int = config.getInt("SPOTIFY.REQUEST_TRACK_LIMIT")
 
   /**
-    * Client app's localhost URL for testing.
+    * CORS allowed URL address.
     */
-  val CLIENT_APP_LOCALHOST: String = config.getString("CLIENT.LOCALHOST")
+  val CORS_ALLOWED_URL: String = config.getString("HTTP.CORS_ALLOWED_URL")
 
 }

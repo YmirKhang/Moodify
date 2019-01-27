@@ -12,13 +12,11 @@ object HTTPHelper {
     * @param environment Environment
     * @return Response headers
     */
-  def getHeaders(environment: Environment.Type): List[RawHeader] = environment match {
-    case Environment.TEST =>
-      List(
-        RawHeader("Access-Control-Allow-Origin", Config.CLIENT_APP_LOCALHOST),
-        RawHeader("Access-Control-Allow-Methods", "GET")
-      )
-    case _ => List()
+  def getHeaders(environment: Environment.Type): List[RawHeader] = {
+    List(
+      RawHeader("Access-Control-Allow-Origin", Config.CORS_ALLOWED_URL),
+      RawHeader("Access-Control-Allow-Methods", "GET")
+    )
   }
 
 }
