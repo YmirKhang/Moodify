@@ -1,0 +1,22 @@
+$(document).ready(function () {
+  const CLIENT_HOST = 'https://moodify.app';
+  const API_HOST = 'https://api.moodify.app';
+  const udidKey = "moodify-udid";
+  const spotifyIdKey = "moodify-spotifyId";
+
+  let udid = localStorage.getItem(udidKey);
+
+  let url = window.location.href;
+  let split = url.split("?code=");
+  let code = split[1];
+  let requestUrl = `${API_HOST}/authenticate/user/${udid}/code/${code}`;
+
+  $.get(requestUrl, function (response) {
+    let json = JSON.parse(response);
+    let data = json.data;
+    let spotifyId = data.userId;
+    localStorage.setItem(spotifyIdKey, spotifyId);
+    window.location.replace(CLIENT_HOST);
+  });
+
+});

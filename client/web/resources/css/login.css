@@ -1,0 +1,33 @@
+body {
+  background: url("../images/bg-dj-set.jpg") center top no-repeat !important;
+  margin: 0;
+}
+
+#login-title {
+  font-size: 3.2rem;
+  font-weight: 900;
+  padding: 10% 0 1.25rem 0;
+  margin: 0;
+}
+
+#login-text {
+  font-size: 2.5rem;
+  margin: 0;
+  font-weight: 300;
+}
+
+#login-button {
+  margin: 50px auto !important;
+  width: 225px !important;
+  margin: 0;
+}
+
+#copyright {
+  font-size: 0.75rem;
+  width: 100%;
+  color: #AAAAAA;
+  text-align: center;
+  position: fixed;
+  left: 0;
+  bottom: 15px;
+}
