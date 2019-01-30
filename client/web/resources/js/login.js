@@ -21,6 +21,12 @@ $(document).ready(function () {
     let redirectUri = `${CLIENT_HOST}/callback.html`;
     let scope = "user-read-recently-played,playlist-modify-public,user-top-read,user-read-private,ugc-image-upload";
 
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('event', 'login-button-click', {
+      'event_category': 'engagement',
+    });
+
     let url = endpoint + "?client_id=" + encodeURIComponent(clientID) +
       "&redirect_uri=" + encodeURIComponent(redirectUri) +
       "&scope=" + encodeURIComponent(scope) +

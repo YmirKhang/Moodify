@@ -15,6 +15,13 @@ $(document).ready(function () {
     let json = JSON.parse(response);
     let data = json.data;
     let spotifyId = data.userId;
+    
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    if (json.success && spotifyId) {
+      gtag('event', 'login');
+    }
+    
     localStorage.setItem(spotifyIdKey, spotifyId);
     window.location.replace(CLIENT_HOST);
   });

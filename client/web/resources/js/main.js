@@ -4,7 +4,7 @@ $(document).ready(function () {
   const LOGIN_PAGE = `${CLIENT_HOST}/login.html`;
   const udidKey = "moodify-udid";
   const spotifyIdKey = "moodify-spotifyId";
-  
+
   let udid = localStorage.getItem(udidKey);
   let spotifyId = localStorage.getItem(spotifyIdKey);
 
@@ -19,7 +19,7 @@ $(document).ready(function () {
   let historicTrendlineURL = `${API_HOST}/user/${udid}/trendline/${historicalTrackCount}?userId=${spotifyId}`;
   let recentTrendlineURL = `${API_HOST}/user/${udid}/trendline/${recentTrackCount}?userId=${spotifyId}`;
   let profileUrl = `${API_HOST}/user/${udid}/profile/?userId=${spotifyId}`;
-  
+
   // Populate profile data.
   $.get(profileUrl, function (response) {
     let json = JSON.parse(response);
@@ -191,6 +191,12 @@ $(document).ready(function () {
           },
           500);
       };
+
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag('event', 'create-playlist', {
+        'event_category': 'recommendation',
+      });
 
       recommendationButton.html("PLEASE WAIT");
       $.createPlaylist(callback);
