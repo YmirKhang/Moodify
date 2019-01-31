@@ -1,12 +1,13 @@
 package moodify.repository
 
+import com.typesafe.scalalogging.LazyLogging
 import moodify.helper.Converter
 import moodify.model.UserProfile
 import moodify.service.{RedisService, SpotifyService}
 
 import scala.util.Try
 
-object UserRepository {
+object UserRepository extends LazyLogging {
 
   /**
     * TTL for user's data in Redis.
@@ -36,7 +37,7 @@ object UserRepository {
       val user = spotify.getCurrentUser
       val userProfile = UserProfile(
         userId = user.getId,
-        name = user.getDisplayName,
+        name = Try(user.getDisplayName).getOrElse(user.getId),
         imageUrl = Try(user.getImages.head.getUrl).toOption.getOrElse(""),
         countryCode = user.getCountry
       )
@@ -52,9 +53,15 @@ object UserRepository {
     * @param userId      Spotify User ID.
     */
   def setUser(userProfile: UserProfile, userId: String): Unit = {
-    val key = userRedisKey(userId)
-    val map = Converter.userProfileToMap(userProfile)
-    RedisService.hmset(key, map, userRedisTTL)
+    try {
+      val key = userRedisKey(userId)
+      val map = Converter.userProfileToMap(userProfile)
+      RedisService.hmset(key, map, userRedisTTL)
+    } catch {
+      case exception: Throwable =>
+        logger.error(exception.getMessage)
+        logger.error(exception.getStackTrace.toList.toString)
+    }
   }
 
 }
