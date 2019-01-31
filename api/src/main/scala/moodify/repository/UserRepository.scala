@@ -37,7 +37,7 @@ object UserRepository extends LazyLogging {
       val user = spotify.getCurrentUser
       val userProfile = UserProfile(
         userId = user.getId,
-        name = Try(user.getDisplayName).getOrElse(user.getId),
+        name = Try(user.getDisplayName).toOption.getOrElse(user.getId),
         imageUrl = Try(user.getImages.head.getUrl).toOption.getOrElse(""),
         countryCode = user.getCountry
       )
