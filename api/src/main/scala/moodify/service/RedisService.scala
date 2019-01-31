@@ -90,13 +90,14 @@ object RedisService {
     * @param key    Redis key.
     * @param values List of values to be added to the tail of list.
     * @param ttl    Time to live for created key in seconds.
-    * @return Success.
     */
-  def rpush(key: String, values: List[String], ttl: Int): Boolean = {
+  def rpush(key: String, values: List[String], ttl: Int): Unit = {
     rcp.withClient {
       client =>
-        client.rpush(key, values.head, values.tail: _*)
-        client.expire(key, ttl)
+        if (values.nonEmpty) {
+          client.rpush(key, values.head, values.tail: _*)
+          client.expire(key, ttl)
+        }
     }
   }
 

@@ -133,7 +133,7 @@ object Identification extends LazyLogging {
     }
     catch {
       case exception: Throwable =>
-        logger.error(exception.getMessage)
+        logger.error("Exception", exception)
         false
     }
   }

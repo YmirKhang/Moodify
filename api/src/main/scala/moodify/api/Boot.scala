@@ -2,11 +2,13 @@ package moodify.api
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.StatusCodes.{BadRequest, NotFound}
+import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.StatusCodes.{BadRequest, NotFound, _}
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Directives.{complete, get, path, pathEndOrSingleSlash, _}
-import akka.http.scaladsl.server.{RejectionHandler, ValidationRejection}
+import akka.http.scaladsl.server.{RejectionHandler, ValidationRejection, _}
 import akka.stream.ActorMaterializer
+import com.typesafe.scalalogging.LazyLogging
 import moodify.Config._
 import moodify.core.{Identification, Insight, Recommendation, Search}
 import moodify.enumeration.TimeRange
@@ -26,7 +28,7 @@ import spray.json._
 import scala.concurrent.ExecutionContextExecutor
 import scala.util.Try
 
-object Boot {
+object Boot extends LazyLogging {
 
   implicit val system: akka.actor.ActorSystem = ActorSystem("Moodify")
   implicit val executor: ExecutionContextExecutor = system.dispatcher
@@ -48,6 +50,13 @@ object Boot {
         }
       }
       .result()
+
+  implicit def exceptionHandler: ExceptionHandler =
+    ExceptionHandler {
+      case exception: Throwable =>
+        logger.error("Global Exception Handler", exception)
+        complete(HttpResponse(InternalServerError, entity = Response.error()))
+    }
 
   def main(args: Array[String]): Unit = {
 

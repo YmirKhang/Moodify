@@ -37,7 +37,7 @@ object UserRepository extends LazyLogging {
       val user = spotify.getCurrentUser
       val userProfile = UserProfile(
         userId = user.getId,
-        name = Try(user.getDisplayName).toOption.getOrElse(user.getId),
+        name = if (user.getDisplayName != null) user.getDisplayName else user.getId,
         imageUrl = Try(user.getImages.head.getUrl).toOption.getOrElse(""),
         countryCode = user.getCountry
       )
@@ -59,8 +59,7 @@ object UserRepository extends LazyLogging {
       RedisService.hmset(key, map, userRedisTTL)
     } catch {
       case exception: Throwable =>
-        logger.error(exception.getMessage)
-        logger.error(exception.getStackTrace.toList.toString)
+        logger.error("Exception", exception)
     }
   }
 

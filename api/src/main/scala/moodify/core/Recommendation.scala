@@ -47,8 +47,7 @@ class Recommendation(spotify: SpotifyService, userId: String) extends LazyLoggin
     }
     catch {
       case exception: Throwable =>
-        logger.error(exception.getMessage)
-        logger.error(exception.getStackTrace.toList.toString)
+        logger.error("Exception", exception)
         false
     }
   }
