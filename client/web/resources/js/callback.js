@@ -1,6 +1,7 @@
 $(document).ready(function () {
   const CLIENT_HOST = 'https://moodify.app';
   const API_HOST = 'https://api.moodify.app';
+  const LOGIN_PAGE = `${CLIENT_HOST}/login.html`;
   const udidKey = "moodify-udid";
   const spotifyIdKey = "moodify-spotifyId";
 
@@ -13,17 +14,25 @@ $(document).ready(function () {
 
   $.get(requestUrl, function (response) {
     let json = JSON.parse(response);
-    let data = json.data;
-    let spotifyId = data.userId;
     
-    window.dataLayer = window.dataLayer || [];
-    function gtag() { dataLayer.push(arguments); }
-    if (json.success && spotifyId) {
-      gtag('event', 'login');
+    if (json.success) {
+      let data = json.data;
+      let spotifyId = data.userId;
+
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      if (json.success && spotifyId) {
+        gtag('event', 'login');
+      }
+
+      localStorage.setItem(spotifyIdKey, spotifyId);
+      window.location.replace(CLIENT_HOST);
+
+    } else {
+      localStorage.removeItem(spotifyIdKey);
+      window.location.replace(LOGIN_PAGE);
     }
     
-    localStorage.setItem(spotifyIdKey, spotifyId);
-    window.location.replace(CLIENT_HOST);
   });
 
 });
