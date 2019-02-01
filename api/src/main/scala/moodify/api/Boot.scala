@@ -55,7 +55,9 @@ object Boot extends LazyLogging {
     ExceptionHandler {
       case exception: Throwable =>
         logger.error("Global Exception Handler", exception)
-        complete(HttpResponse(InternalServerError, entity = Response.error()))
+        respondWithHeaders(headers) {
+          complete(HttpResponse(InternalServerError, entity = Response.error()))
+        }
     }
 
   def main(args: Array[String]): Unit = {
