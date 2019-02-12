@@ -2,10 +2,10 @@ name := "MoodifyAPI"
 
 version := "0.1"
 
-scalaVersion := "2.12.7"
+scalaVersion := "2.12.8"
 
-val akkaVersion     = "2.5.14"
-val akkaHttpVersion = "10.1.3"
+val akkaVersion     = "2.5.20"
+val akkaHttpVersion = "10.1.7"
 
 libraryDependencies ++= Seq(
   "com.typesafe.akka"            %% "akka-actor"                % akkaVersion,
@@ -13,7 +13,7 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka"            %% "akka-http"                 % akkaHttpVersion,
   "com.typesafe.akka"            %% "akka-http-spray-json"      % akkaHttpVersion,
   "com.typesafe.scala-logging"   %% "scala-logging"             % "3.9.0",
-  "net.debasishg"                %% "redisclient"               % "3.8",
+  "net.debasishg"                %% "redisclient"               % "3.9",
   "org.scalatest"                %% "scalatest"                 % "3.0.5" % "test",
   "ch.qos.logback"               %  "logback-classic"           % "1.2.3",
   "se.michaelthelin.spotify"     %  "spotify-web-api-java"      % "2.0.5",
