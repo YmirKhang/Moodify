@@ -8,7 +8,7 @@ object Response {
   /**
     * Default error message.
     */
-  private val defaultErrorMessage = "An error occurred."
+  private val defaultErrorMessage = "An error occurred while processing the request."
 
   /**
     * Respond success with additional data.

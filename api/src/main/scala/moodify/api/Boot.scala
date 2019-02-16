@@ -2,13 +2,9 @@ package moodify.api
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.StatusCodes.{BadRequest, NotFound, _}
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Directives.{complete, get, path, pathEndOrSingleSlash, _}
-import akka.http.scaladsl.server.{RejectionHandler, ValidationRejection, _}
 import akka.stream.ActorMaterializer
-import com.typesafe.scalalogging.LazyLogging
 import moodify.Config._
 import moodify.core.{Identification, Insight, Recommendation, Search}
 import moodify.enumeration.TimeRange
@@ -28,7 +24,7 @@ import spray.json._
 import scala.concurrent.ExecutionContextExecutor
 import scala.util.Try
 
-object Boot extends LazyLogging {
+object Boot extends FailureHandling {
 
   implicit val system: akka.actor.ActorSystem = ActorSystem("Moodify")
   implicit val executor: ExecutionContextExecutor = system.dispatcher
@@ -36,29 +32,6 @@ object Boot extends LazyLogging {
   private val headers: List[RawHeader] = HTTPHelper.getHeaders(ENVIRONMENT)
 
   implicit def listJsonWriter[T: JsonWriter]: RootJsonWriter[List[T]] = (list: List[T]) => JsArray(list.map(_.toJson).toVector)
-
-  implicit def rejectionHandler: RejectionHandler =
-    RejectionHandler.newBuilder()
-      .handle { case ValidationRejection(response, _) =>
-        respondWithHeaders(headers) {
-          complete((BadRequest, response))
-        }
-      }
-      .handleNotFound {
-        respondWithHeaders(headers) {
-          complete((NotFound, Response.error("Invalid request.")))
-        }
-      }
-      .result()
-
-  implicit def exceptionHandler: ExceptionHandler =
-    ExceptionHandler {
-      case exception: Throwable =>
-        logger.error("Global Exception Handler", exception)
-        respondWithHeaders(headers) {
-          complete(HttpResponse(InternalServerError, entity = Response.error()))
-        }
-    }
 
   def main(args: Array[String]): Unit = {
 
@@ -87,7 +60,7 @@ object Boot extends LazyLogging {
            * GET /authenticate/user/{udid}/code/{code}
            * Authenticate given user with given Spotify code.
            */
-          pathPrefix("authenticate" / "user" / Segment / "code" / Segment) { (udid: String, code: String) =>
+          path("authenticate" / "user" / Segment / "code" / Segment) { (udid: String, code: String) =>
             pathEndOrSingleSlash {
               get {
                 val success = Identification.authenticate(udid, code)
@@ -126,7 +99,7 @@ object Boot extends LazyLogging {
                    * GET /user/{udid}/profile
                    * Get profile information of given user.
                    */
-                  pathPrefix("profile") {
+                  path("profile") {
                     pathEndOrSingleSlash {
                       get {
                         val profile = UserRepository.getUser(spotify, userId)
@@ -138,10 +111,9 @@ object Boot extends LazyLogging {
                      * GET /user/{udid}/trendline/{num-tracks}
                      * Get trendline for given user using given number of tracks.
                      */
-                    pathPrefix("trendline" / Segment) { numTracksString: String =>
+                    path("trendline" / IntNumber) { numTracks: Int =>
                       pathEndOrSingleSlash {
                         get {
-                          val numTracks = numTracksString.toInt
                           validate(numTracks <= SPOTIFY_REQUEST_TRACK_LIMIT,
                             Response.json(success = false, message = s"Limit is $SPOTIFY_REQUEST_TRACK_LIMIT songs.")) {
                             val insight = new Insight(spotify, userId)
@@ -155,7 +127,7 @@ object Boot extends LazyLogging {
                      * GET /user/{udid}/top-artists/{time-range}
                      * Get top artists of given user for given time range.
                      */
-                    pathPrefix("top-artists" / Segment) { timeRangeString: String =>
+                    path("top-artists" / Segment) { timeRangeString: String =>
                       pathEndOrSingleSlash {
                         get {
                           val maybeTimeRange = Try(TimeRange.withName(timeRangeString)).toOption
@@ -171,7 +143,7 @@ object Boot extends LazyLogging {
                      * GET /user/{udid}/top-tracks/{time-range}
                      * Get top tracks of given user for given time range.
                      */
-                    pathPrefix("top-tracks" / Segment) { timeRangeString: String =>
+                    path("top-tracks" / Segment) { timeRangeString: String =>
                       pathEndOrSingleSlash {
                         get {
                           val maybeTimeRange = Try(TimeRange.withName(timeRangeString)).toOption
@@ -187,7 +159,7 @@ object Boot extends LazyLogging {
                        * GET /user/{udid}/default-artists
                        * Get default artist list for current user's recommendations.
                        */
-                    pathPrefix("default-artists") {
+                    path("default-artists") {
                       pathEndOrSingleSlash {
                         get {
                           val insight = new Insight(spotify, userId)
@@ -200,7 +172,7 @@ object Boot extends LazyLogging {
                      * POST /user/{udid}/recommendation
                      * Get recommendations for user with given settings.
                      */
-                    pathPrefix("recommendation") {
+                    path("recommendation") {
                       pathEndOrSingleSlash {
                         post {
                           entity(as[String]) { body =>
@@ -218,7 +190,7 @@ object Boot extends LazyLogging {
                      * POST /user/{udid}/search
                      * Get search result for given query.
                      */
-                    pathPrefix("search") {
+                    path("search") {
                       parameter("query".as[String]) { query =>
                         pathEndOrSingleSlash {
                           get {
