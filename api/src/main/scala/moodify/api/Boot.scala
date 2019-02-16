@@ -163,7 +163,7 @@ object Boot extends FailureHandling {
                       pathEndOrSingleSlash {
                         get {
                           val insight = new Insight(spotify, userId)
-                          val artistList = insight.getRecommendationArtists
+                          val artistList = insight.getRecentArtists
                           complete(Response.success(data = artistList.toJson))
                         }
                       }

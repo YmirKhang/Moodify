@@ -1,6 +1,5 @@
 package moodify.core
 
-import com.wrapper.spotify.model_objects.specification.ArtistSimplified
 import moodify.Config._
 import moodify.enumeration.{ItemType, TimeRange}
 import moodify.helper.Converter
@@ -29,6 +28,11 @@ class Insight(spotify: SpotifyService, userId: String) {
   private val userTopListTTL = 1 * 3600 // 1 hour.
 
   /**
+    * Time to live for user's recent tracks in Redis.
+    */
+  private val userRecentTrackListTTL = 3 * 60 // 3 minutes.
+
+  /**
     * Redis key for trendline for given user.
     *
     * @param userId    Spotify User ID.
@@ -54,6 +58,14 @@ class Insight(spotify: SpotifyService, userId: String) {
     * @return Redis key.
     */
   private def topArtistsRedisKey(userId: String, timeRange: TimeRange.Value) = s"user:$userId:top:artist:$timeRange"
+
+  /**
+    * Redis key for recently listened tracks of given user.
+    *
+    * @param userId Spotify User ID.
+    * @return Redis key.
+    */
+  private def recentTracksRedisKey(userId: String) = s"user:$userId:recent:track"
 
   /**
     * Get top artists of current user.
@@ -84,6 +96,7 @@ class Insight(spotify: SpotifyService, userId: String) {
     topSimpleArtists.foreach(simpleArtist => ArtistRepository.setSimpleArtist(simpleArtist))
 
     val topArtistsIdList = topArtists.map(artist => artist.getId)
+    RedisService.del(redisKey)
     RedisService.rpush(redisKey, topArtistsIdList, userTopListTTL)
 
     topSimpleArtists
@@ -118,6 +131,7 @@ class Insight(spotify: SpotifyService, userId: String) {
     topSimpleTracks.foreach(simpleTrack => TrackRepository.setSimpleTrack(simpleTrack))
 
     val topTracksIdList = topTracks.map(track => track.getId)
+    RedisService.del(redisKey)
     RedisService.rpush(redisKey, topTracksIdList, userTopListTTL)
 
     topSimpleTracks
@@ -171,22 +185,47 @@ class Insight(spotify: SpotifyService, userId: String) {
     *
     * @return List of artists.
     */
-  def getRecommendationArtists: List[SearchResponse] = {
-    val trackCount = math.min(SPOTIFY_REQUEST_TRACK_LIMIT, RECOMMENDATION_DEFAULT_ARTISTS_LIMIT * 3)
-    val recentTracks = spotify.getRecentTracks(trackCount)
-    val recentArtists = recentTracks.map(track => track.getTrack.getArtists.head).toList
-    val distinctArtists = distinctBy(recentArtists) { artist: ArtistSimplified => artist.getId }
+  def getRecentArtists: List[SearchResponse] = {
+    val redisKey = recentTracksRedisKey(userId)
+
+    // Get user's recent track id list from Redis.
+    val maybeRecentTrackIdList = RedisService.lrange(redisKey, size = RECOMMENDATION_DEFAULT_ARTISTS_LIMIT)
+    val redisTrackList = if (maybeRecentTrackIdList.isDefined) {
+      val recentTrackIdList = maybeRecentTrackIdList.get
+        .map(maybeTrackId => maybeTrackId.getOrElse(""))
+        .filter(trackId => trackId.nonEmpty)
+      val simpleTrackList = recentTrackIdList.map(trackId => TrackRepository.getSimpleTrack(trackId))
+      simpleTrackList
+    } else List[SimpleTrack]()
+
+    // Get recently listened artists. If size is enough get track data from Redis track list.
+    val recentArtists = if (redisTrackList.length == RECOMMENDATION_DEFAULT_ARTISTS_LIMIT) {
+      redisTrackList.map(track => track.artists.head)
+    } else {
+      // Redis does not hold required amount of data. Get recent tracks from Spotify.
+      val recentTracks = spotify.getRecentTracks(RECOMMENDATION_DEFAULT_ARTISTS_LIMIT)
+      val recentArtists = recentTracks.map(_.getTrack.getArtists.head).toList
+      val recentSimpleArtists = recentArtists.map(artist => SimpleArtist(artist.getId, artist.getName, ""))
+
+      val recentTracksIdList = recentTracks.map(_.getTrack.getId).toList
+      RedisService.del(redisKey)
+      RedisService.rpush(redisKey, recentTracksIdList, userRecentTrackListTTL)
+
+      recentSimpleArtists
+    }
+
+    val distinctArtists = distinctBy(recentArtists) { artist: SimpleArtist => artist.id }
       .take(RECOMMENDATION_DEFAULT_ARTISTS_LIMIT)
 
-    val recommendationArtists = distinctArtists.map { artist =>
+    val recentArtistList = distinctArtists.map { artist =>
       SearchResponse(
-        artist.getName,
-        artist.getId,
+        artist.name,
+        artist.id,
         ItemType.ARTIST
       )
     }
 
-    recommendationArtists
+    recentArtistList
   }
 
 }
