@@ -18,7 +18,7 @@ $(document).ready(function () {
 
   let historicTrendlineURL = `${API_HOST}/user/${udid}/trendline/${historicalTrackCount}?userId=${spotifyId}`;
   let recentTrendlineURL = `${API_HOST}/user/${udid}/trendline/${recentTrackCount}?userId=${spotifyId}`;
-  let profileUrl = `${API_HOST}/user/${udid}/profile/?userId=${spotifyId}`;
+  let profileUrl = `${API_HOST}/user/${udid}/profile?userId=${spotifyId}`;
 
   // Populate profile data.
   $.get(profileUrl, function (response) {
