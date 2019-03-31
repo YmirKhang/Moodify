@@ -20,9 +20,23 @@ $(document).ready(function () {
   let recentTrendlineURL = `${API_HOST}/user/${udid}/trendline/${recentTrackCount}?userId=${spotifyId}`;
   let profileUrl = `${API_HOST}/user/${udid}/profile?userId=${spotifyId}`;
 
+  $.logout = function () {
+    localStorage.removeItem(udidKey);
+    localStorage.removeItem(spotifyIdKey);
+    location.reload();
+    return;
+  }
+
+  $("#logout").click($.logout);
+
   // Populate profile data.
   $.get(profileUrl, function (response) {
     let json = JSON.parse(response);
+
+    if (json.success == 'false' && json.message.includes('not authorized')) {
+      $.logout();
+    }
+
     let data = json.data;
     let imageSize = 25;
     let image = `<image src='${data.imageUrl}' class='profile-image inline' width='${imageSize}' heigth='${imageSize}'>`;
@@ -235,13 +249,6 @@ $(document).ready(function () {
       $.postJSON(url, data, callback);
     }
   }
-
-  $("#logout").click(function () {
-    localStorage.removeItem(udidKey);
-    localStorage.removeItem(spotifyIdKey);
-    location.reload();
-    return;
-  });
 
   $.postJSON = function (url, data, callback) {
     return jQuery.ajax({
