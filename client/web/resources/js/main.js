@@ -33,20 +33,94 @@ $(document).ready(function () {
   $.get(profileUrl, function (response) {
     let json = JSON.parse(response);
 
-    if (json.success == 'false' && json.message.includes('not authorized')) {
-      $.logout();
-    }
-
     let data = json.data;
     let imageSize = 25;
-    let image = `<image src='${data.imageUrl}' class='profile-image inline' width='${imageSize}' heigth='${imageSize}'>`;
-    let name = `<p class='profile-name inline'>${data.name}</p>`;
-    let profileData = image + name;
-    $("#profile-inner").append(profileData);
+
+    let image = $('<img>', {
+      class: 'profile-image inline',
+      src: data.imageUrl,
+      width: imageSize,
+      height: imageSize
+    });
+
+    let name = $('<p>', {
+      class: 'profile-name inline',
+      text: data.name
+    });
+
+    $("#profile-inner").append(image);
+    $("#profile-inner").append(name);
+
+  }).fail(function (response) {
+    let json = JSON.parse(response.responseText);
+
+    if (json.success == false && json.message.includes('not authorized')) {
+      $.logout();
+    }
   });
 
   /**
+   * Creates clickable tile for artist/track.
+   * 
+   * @param data Artist/track data.
+   * @param type Data type as 'artist' or 'track'.
+   * @param imageSize Requested size for artist/track image.
+   * @return Clickable artist/track tile as div object.
+   */
+  $.createTrackArtistTile = function (data, type, imageSize) {
+    let image = $('<img>', {
+      class: 'list-item-image',
+      src: data.imageUrl,
+      width: imageSize,
+      height: imageSize
+    });
+
+    let imageDiv = $('<div>', {
+      class: 'col-sm-2',
+      html: image
+    });
+
+    imageDiv.append(image);
+
+    let nameDiv = $('<div>', {
+      class: 'col-sm-10'
+    });
+
+    let trackNameDiv = $('<div>', {
+      class: 'row list-item-track-name col-sm-12',
+      text: data.name
+    });
+
+    let artistNames = data.artists.map(artist => artist.name).join(", ");
+    let artistNamesDiv = $('<div>', {
+      class: 'row list-item-artist-name col-sm-12',
+      text: artistNames
+    });
+
+    nameDiv.append(trackNameDiv);
+    nameDiv.append(artistNamesDiv);
+
+    let listItemDiv = $('<div>', {
+      class: 'row list-item'
+    });
+
+    listItemDiv.append(imageDiv);
+    listItemDiv.append(nameDiv);
+
+    let clickableListItemDiv = $('<a>', {
+      target: '_blank',
+      rel: 'noopener noreferrer',
+      href: `https://open.spotify.com/${type}/${data.id}`
+    });
+
+    clickableListItemDiv.append(listItemDiv);
+
+    return clickableListItemDiv;
+  }
+
+  /**
    * Populates top artists and tracks.
+   * 
    * @param type artist or track
    */
   $.populateTopArtistTracks = function (type, limit) {
@@ -57,21 +131,17 @@ $(document).ready(function () {
         let json = JSON.parse(response);
         let data = json.data.slice(0, limit);
         let divId = `#top-${type}-${term}-term`;
-        var blockData = "<div class='col-sm-12'>";
         let imageSize = 45;
-        data.forEach(function (object) {
-          let image = `<div class='col-sm-2'><image src='${object.imageUrl}' class='list-item-image' width='${imageSize}' heigth='${imageSize}'></div>`;
-          let artistNames = object.artists.map(artist => artist.name).join(", ");
-          let name = `<div class='col-sm-10'>
-          <div class='row list-item-track-name'><div class='col-sm-12'>${object.name}</div></div>
-          <div class='row list-item-artist-name'><div class='col-sm-12'>${artistNames}</div></div>
-          </div>`;
-          let listItem = "<div class='row list-item'>" + image + name + "</div>";
-          let clickableListItem = `<a target='_blank' rel='noopener noreferrer' href='https://open.spotify.com/${type}/${object.id}'>${listItem}</a>`;
-          blockData += clickableListItem;
+        let blockDataDiv = $('<div>', {
+          class: 'col-sm-12'
         });
-        blockData += "</div>";
-        $(divId).append(blockData);
+
+        data.forEach(function (object) {
+          let clickableListItemDiv = $.createTrackArtistTile(object, type, imageSize);
+          blockDataDiv.append(clickableListItemDiv);
+        });
+
+        $(divId).append(blockDataDiv);
       });
     });
   }
@@ -138,7 +208,7 @@ $(document).ready(function () {
       }
       let imageHtml = `<image src='${item.imageUrl}' class='list-item-image-${itemType}' width='${imageSize}' heigth='${imageSize}'></div>`;
 
-      listData += `<li id='search-result-${item.id}' class='list-item-search-result' data-type='${itemType}'>${imageHtml} ${item.name + extraData}</li>`;
+      listData += `<li id='search-result-${item.id}' class='list-item-search-result' data-type='${itemType}'>${imageHtml}${item.name + extraData}</li>`;
     });
 
     $(listId).html(listData);
