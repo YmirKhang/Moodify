@@ -86,7 +86,7 @@
         <div class="row">
           <div class="col" id="recommendation-seed">
             <input type="text" id="recommendation-seed-search" placeholder="Search artist or track for recommendation seed"
-              required size="80" pattern="[a-zA-Z0-9]{0,64}" autocomplete="off">
+              pattern="[a-zA-Z0-9]{0,64}" autocomplete="off">
           </div>
           <div class="col">
             <div class="button" id="recommendation-create-button">CREATE PLAYLIST</div>
@@ -104,7 +104,7 @@
       </div>
     </div>
     <!-- Recent Stats widget -->
-    <div class="row">
+    <div class="row d-none d-md-block">
       <div class="col-sm-12">
         <h2>Recent Style</h2>
         <p id="prompt">How your music style is changing currently</p>
@@ -113,7 +113,7 @@
       </div>
     </div>
     <!-- Favourites widget -->
-    <div class="row" id="favorites">
+    <div class="row d-none d-md-flex" id="favorites">
       <div class="col-sm-12">
         <h2>Favourites</h2>
         <p id="prompt">How your favorite tracks are changed over a long period</p>

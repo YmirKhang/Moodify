@@ -150,7 +150,7 @@ div .button:hover, .button-solid:hover {
 }
 
 #recommendation-seed {
-	margin: 1.75rem 0 0 0;
+	margin: 0.75rem 0 0 0;
 }
 
 #recommendation-seed-search {
@@ -159,10 +159,14 @@ div .button:hover, .button-solid:hover {
 	border: 0;
 	outline: 0;
 	border-bottom: 1px solid rgba(255, 255, 255, 0.85);
+	width: 100%;
+	max-width: 600px;
+	box-sizing: border-box;
 }
 
 .selected-seed {
 	margin-right: 1rem;
+	margin-bottom: 1rem;
 }
 
 #recommendation-seed-selected {

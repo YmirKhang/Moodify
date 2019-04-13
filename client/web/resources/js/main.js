@@ -76,14 +76,14 @@ $(document).ready(function () {
     });
 
     let imageDiv = $('<div>', {
-      class: 'col-sm-2',
+      class: 'col-sm-3 col-lg-2',
       html: image
     });
 
     imageDiv.append(image);
 
     let nameDiv = $('<div>', {
-      class: 'col-sm-10'
+      class: 'col-sm-9 col-lg-10'
     });
 
     let trackNameDiv = $('<div>', {
