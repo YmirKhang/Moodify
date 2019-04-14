@@ -36,3 +36,10 @@ python -m SimpleHTTPServer
 ````
 
 Note that you need to set environment variables `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` and `SPOTIFY_REDIRECT_URI` for the application to run and communicate with Spotify API. If you do not have these credentials, you must create a Spotify developer account and register your app to get these credentials. For detailed information please check https://developer.spotify.com/documentation/general/guides/app-settings/
+
+### Docker installation
+Additionally if you have docker installed,
+-Plug the client id, secret, api_address and redirect uri variables in moodify.env and simply run:  
+`docker-compose up`  
+to start a standalone redis server, the frontend server and the backend server. If you want to run in background mode then try:  
+`docker-compose up -d`
