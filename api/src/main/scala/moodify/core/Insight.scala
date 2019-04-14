@@ -170,7 +170,10 @@ class Insight(spotify: SpotifyService, userId: String) {
         accum.danceability + trendline.danceability / numTracks,
         accum.liveness + trendline.liveness / numTracks,
         accum.energy + trendline.energy / numTracks,
-        accum.valence + trendline.valence / numTracks
+        accum.valence + trendline.valence / numTracks,
+        accum.tempo + trendline.tempo / numTracks,
+        accum.loudness + trendline.loudness / numTracks,
+        accum.duration + trendline.duration / numTracks
       )
     }
 

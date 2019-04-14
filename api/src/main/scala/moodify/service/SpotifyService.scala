@@ -175,7 +175,10 @@ class SpotifyService extends LazyLogging {
         audioFeatures.getDanceability.toDouble,
         audioFeatures.getLiveness.toDouble,
         audioFeatures.getEnergy.toDouble,
-        audioFeatures.getValence.toDouble
+        audioFeatures.getValence.toDouble,
+        audioFeatures.getTempo.toDouble,
+        audioFeatures.getLoudness.toDouble,
+        audioFeatures.getDurationMs.toDouble / 1000
       )
 
       TrackFeatures(trackId, trendline)
@@ -453,6 +456,26 @@ class SpotifyService extends LazyLogging {
     if (preferences.valence.isDefined) {
       val target = preferences.valence.get.toFloat
       request.target_valence(target)
+    }
+
+    if (preferences.tempo.isDefined) {
+      val target = preferences.tempo.get.toFloat
+      request.target_tempo(target)
+    }
+
+    if (preferences.duration.isDefined) {
+      val target = preferences.duration.get * 1000
+      request.target_duration_ms(target)
+    }
+
+    if (preferences.loudness.isDefined) {
+      val target = preferences.loudness.get.toFloat
+      request.target_loudness(target)
+    }
+
+    if (preferences.popularity.isDefined) {
+      val target = preferences.popularity.get
+      request.target_popularity(target)
     }
 
     val recommendations = request

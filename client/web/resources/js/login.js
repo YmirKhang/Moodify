@@ -1,5 +1,5 @@
 $(document).ready(function () {
-  const CLIENT_HOST = 'https://moodify.app';
+  const CLIENT_HOST = 'http://localhost:8000';
   const udidKey = "moodify-udid";
   
   let udid = localStorage.getItem(udidKey);

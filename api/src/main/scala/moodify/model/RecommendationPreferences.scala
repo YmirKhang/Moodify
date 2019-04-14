@@ -11,9 +11,13 @@ case class RecommendationPreferences(
                                       danceability: Option[Double],
                                       liveness: Option[Double],
                                       energy: Option[Double],
-                                      valence: Option[Double]
+                                      valence: Option[Double],
+                                      tempo: Option[Int],
+                                      loudness: Option[Double],
+                                      duration: Option[Int],
+                                      popularity: Option[Int]
                                     )
 
 object RecommendationPreferencesProtocol extends DefaultJsonProtocol {
-  implicit val recommendationPreferencesFormat: RootJsonFormat[RecommendationPreferences] = jsonFormat9(RecommendationPreferences)
+  implicit val recommendationPreferencesFormat: RootJsonFormat[RecommendationPreferences] = jsonFormat13(RecommendationPreferences)
 }

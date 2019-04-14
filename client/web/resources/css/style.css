@@ -63,10 +63,11 @@ div .button {
 	background-color: #181818;
 	color: #FFF;
 	font-size: 1rem;
-	width: 150px;
+	width: max-content;
+	min-width: 150px;
 	height: 3rem;
 	text-align: center;
-	padding: 0.75rem 0 0 0;
+	padding: 0.75rem 1.5rem 0 1.5rem;
 	border: solid 1px #FFF;
 	border-radius: 25px;
 	cursor: pointer;

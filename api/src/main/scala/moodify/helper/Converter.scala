@@ -33,7 +33,10 @@ object Converter {
       "danceability" -> trendline.danceability.toString,
       "liveness" -> trendline.liveness.toString,
       "energy" -> trendline.energy.toString,
-      "valence" -> trendline.valence.toString
+      "valence" -> trendline.valence.toString,
+      "tempo" -> trendline.tempo.toString,
+      "loudness" -> trendline.loudness.toString,
+      "duration" -> trendline.duration.toString
     )
   }
 
@@ -51,7 +54,10 @@ object Converter {
       map("danceability").toDouble,
       map("liveness").toDouble,
       map("energy").toDouble,
-      map("valence").toDouble
+      map("valence").toDouble,
+      map("tempo").toDouble,
+      map("loudness").toDouble,
+      map("duration").toDouble
     )
   }
 

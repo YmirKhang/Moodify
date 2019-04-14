@@ -1,6 +1,6 @@
 $(document).ready(function () {
-  const CLIENT_HOST = 'https://moodify.app';
-  const API_HOST = 'https://api.moodify.app';
+  const CLIENT_HOST = 'http://localhost:8000';
+  const API_HOST = 'http://localhost:9000';
   const LOGIN_PAGE = `${CLIENT_HOST}/login.html`;
   const udidKey = "moodify-udid";
   const spotifyIdKey = "moodify-spotifyId";
@@ -10,9 +10,14 @@ $(document).ready(function () {
   let url = window.location.href;
   let split = url.split("?code=");
   let code = split[1];
-  let requestUrl = `${API_HOST}/authenticate/user/${udid}/code/${code}`;
+  
+  let requestUrl = `${API_HOST}/authenticate`;
+  let data = {
+    udid: udid,
+    code: code
+  };
 
-  $.get(requestUrl, function (response) {
+  $.get(requestUrl, data, function (response) {
     let json = JSON.parse(response);
     
     if (json.success) {

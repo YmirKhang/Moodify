@@ -56,155 +56,161 @@ object Boot extends FailureHandling {
             }
           }
         } ~
-          /*
-           * GET /authenticate/user/{udid}/code/{code}
-           * Authenticate given user with given Spotify code.
-           */
-          path("authenticate" / "user" / Segment / "code" / Segment) { (udid: String, code: String) =>
-            pathEndOrSingleSlash {
-              get {
-                val success = Identification.authenticate(udid, code)
-                if (success) {
-                  val maybeAccessToken = Identification.authorize(udid)
-                  if (maybeAccessToken.isDefined) {
+          parameter("udid".as[String]) { udid: String =>
+            /*
+             * GET /authenticate
+             * Authenticate given user with given Spotify code.
+             */
+            path("authenticate") {
+              parameter("code".as[String]) { code: String =>
+                pathEndOrSingleSlash {
+                  get {
+                    val success = Identification.authenticate(udid, code)
+                    if (success) {
+                      val maybeAccessToken = Identification.authorize(udid)
+                      if (maybeAccessToken.isDefined) {
+                        val accessToken = maybeAccessToken.get
+                        val spotify = new SpotifyService
+                        spotify.authorize(accessToken)
+                        val userId = spotify.getCurrentUserId
+                        val profile = UserRepository.getUser(spotify, userId)
+                        complete(Response.success(data = profile.toJson))
+                      } else complete(Response.error())
+                    } else complete(Response.error())
+                  }
+                }
+              }
+            } ~
+              /*
+               * Endpoints with Authorization.
+               */
+              parameter("userId".as[String]) { userIdParameter =>
+                val authorizationErrorMessage = "User is not authorized."
+                val maybeAccessToken = Identification.authorize(udid)
+
+                validate(maybeAccessToken.isDefined, Response.error(authorizationErrorMessage)) {
+                  val userId = Identification.getUserId(udid).get
+
+                  validate(userId == userIdParameter, Response.error(authorizationErrorMessage)) {
                     val accessToken = maybeAccessToken.get
                     val spotify = new SpotifyService
                     spotify.authorize(accessToken)
-                    val userId = spotify.getCurrentUserId
-                    val profile = UserRepository.getUser(spotify, userId)
-                    complete(Response.success(data = profile.toJson))
-                  } else complete(Response.error())
-                } else complete(Response.error())
-              }
-            }
-          } ~
-          /*
-           * GET /user/{udid}
-           * Endpoints with Authorization.
-           */
-          pathPrefix("user" / Segment) { udid: String =>
-            parameter("userId".as[String]) { userIdParameter =>
-              val authorizationErrorMessage = "User is not authorized."
-              val maybeAccessToken = Identification.authorize(udid)
 
-              validate(maybeAccessToken.isDefined, Response.error(authorizationErrorMessage)) {
-                val userId = Identification.getUserId(udid).get
-
-                validate(userId == userIdParameter, Response.error(authorizationErrorMessage)) {
-                  val accessToken = maybeAccessToken.get
-                  val spotify = new SpotifyService
-                  spotify.authorize(accessToken)
-
-                  /*
-                   * GET /user/{udid}/profile
-                   * Get profile information of given user.
-                   */
-                  path("profile") {
-                    pathEndOrSingleSlash {
-                      get {
-                        val profile = UserRepository.getUser(spotify, userId)
-                        complete(Response.success(data = profile.toJson))
-                      }
-                    }
-                  } ~
                     /*
-                     * GET /user/{udid}/trendline/{num-tracks}
-                     * Get trendline for given user using given number of tracks.
+                     * GET /profile
+                     * Get profile information of given user.
                      */
-                    path("trendline" / IntNumber) { numTracks: Int =>
+                    path("profile") {
                       pathEndOrSingleSlash {
                         get {
-                          validate(numTracks <= SPOTIFY_REQUEST_TRACK_LIMIT,
-                            Response.json(success = false, message = s"Limit is $SPOTIFY_REQUEST_TRACK_LIMIT songs.")) {
-                            val insight = new Insight(spotify, userId)
-                            val trendline = insight.getTrendline(numTracks)
-                            complete(Response.success(data = trendline.toJson))
-                          }
+                          val profile = UserRepository.getUser(spotify, userId)
+                          complete(Response.success(data = profile.toJson))
                         }
                       }
                     } ~
-                    /*
-                     * GET /user/{udid}/top-artists/{time-range}
-                     * Get top artists of given user for given time range.
-                     */
-                    path("top-artists" / Segment) { timeRangeString: String =>
-                      pathEndOrSingleSlash {
-                        get {
-                          val maybeTimeRange = Try(TimeRange.withName(timeRangeString)).toOption
-                          validate(maybeTimeRange.isDefined, Response.error("Given time range is not valid.")) {
-                            val insight = new Insight(spotify, userId)
-                            val simpleArtistList = insight.getTopArtists(maybeTimeRange.get, TOP_ARTIST_TRACK_LIMIT)
-                            complete(Response.success(data = simpleArtistList.toJson))
-                          }
-                        }
-                      }
-                    } ~
-                    /*
-                     * GET /user/{udid}/top-tracks/{time-range}
-                     * Get top tracks of given user for given time range.
-                     */
-                    path("top-tracks" / Segment) { timeRangeString: String =>
-                      pathEndOrSingleSlash {
-                        get {
-                          val maybeTimeRange = Try(TimeRange.withName(timeRangeString)).toOption
-                          validate(maybeTimeRange.isDefined, Response.error("Given time range is not valid.")) {
-                            val insight = new Insight(spotify, userId)
-                            val simpleTrackList = insight.getTopTracks(maybeTimeRange.get, TOP_ARTIST_TRACK_LIMIT)
-                            complete(Response.success(data = simpleTrackList.toJson))
-                          }
-                        }
-                      }
-                    } ~
-                    /*
-                       * GET /user/{udid}/default-artists
-                       * Get default artist list for current user's recommendations.
+                      /*
+                       * GET /trendline
+                       * Get trendline for given user using given number of tracks.
                        */
-                    path("default-artists") {
-                      pathEndOrSingleSlash {
-                        get {
-                          val insight = new Insight(spotify, userId)
-                          val artistList = insight.getRecentArtists
-                          complete(Response.success(data = artistList.toJson))
+                      path("trendline") {
+                        parameter("numTracks".as[Int]) { numTracks: Int =>
+                          pathEndOrSingleSlash {
+                            get {
+                              validate(numTracks <= SPOTIFY_REQUEST_TRACK_LIMIT,
+                                Response.json(success = false, message = s"Limit is $SPOTIFY_REQUEST_TRACK_LIMIT songs.")) {
+                                val insight = new Insight(spotify, userId)
+                                val trendline = insight.getTrendline(numTracks)
+                                complete(Response.success(data = trendline.toJson))
+                              }
+                            }
+                          }
                         }
-                      }
-                    } ~
-                    /*
-                     * POST /user/{udid}/recommendation
-                     * Get recommendations for user with given settings.
-                     */
-                    path("recommendation") {
-                      pathEndOrSingleSlash {
-                        post {
-                          entity(as[String]) { body =>
-                            validate(body.nonEmpty, Response.error("Recommendation settings must be provided.")) {
-                              val preferences = body.parseJson.convertTo[RecommendationPreferences]
-                              val recommendation = new Recommendation(spotify, userId)
-                              val success = recommendation.recommend(preferences, NEW_PLAYLIST_SIZE)
-                              complete(Response.json(success = success))
+                      } ~
+                      /*
+                       * GET /top-artists
+                       * Get top artists of given user for given time range.
+                       */
+                      path("top-artists") {
+                        parameter("timeRange".as[String]) { timeRangeString: String =>
+                          pathEndOrSingleSlash {
+                            get {
+                              val maybeTimeRange = Try(TimeRange.withName(timeRangeString)).toOption
+                              validate(maybeTimeRange.isDefined, Response.error("Given time range is not valid.")) {
+                                val insight = new Insight(spotify, userId)
+                                val simpleArtistList = insight.getTopArtists(maybeTimeRange.get, TOP_ARTIST_TRACK_LIMIT)
+                                complete(Response.success(data = simpleArtistList.toJson))
+                              }
+                            }
+                          }
+                        }
+                      } ~
+                      /*
+                       * GET /top-tracks
+                       * Get top tracks of given user for given time range.
+                       */
+                      path("top-tracks") {
+                        parameter("timeRange".as[String]) { timeRangeString: String =>
+                          pathEndOrSingleSlash {
+                            get {
+                              val maybeTimeRange = Try(TimeRange.withName(timeRangeString)).toOption
+                              validate(maybeTimeRange.isDefined, Response.error("Given time range is not valid.")) {
+                                val insight = new Insight(spotify, userId)
+                                val simpleTrackList = insight.getTopTracks(maybeTimeRange.get, TOP_ARTIST_TRACK_LIMIT)
+                                complete(Response.success(data = simpleTrackList.toJson))
+                              }
+                            }
+                          }
+                        }
+                      } ~
+                      /*
+                         * GET /default-artists
+                         * Get default artist list for current user's recommendations.
+                         */
+                      path("default-artists") {
+                        pathEndOrSingleSlash {
+                          get {
+                            val insight = new Insight(spotify, userId)
+                            val artistList = insight.getRecentArtists
+                            complete(Response.success(data = artistList.toJson))
+                          }
+                        }
+                      } ~
+                      /*
+                       * POST /recommendation
+                       * Get recommendations for user with given settings.
+                       */
+                      path("recommendation") {
+                        pathEndOrSingleSlash {
+                          post {
+                            entity(as[String]) { body =>
+                              validate(body.nonEmpty, Response.error("Recommendation settings must be provided.")) {
+                                val preferences = body.parseJson.convertTo[RecommendationPreferences]
+                                val recommendation = new Recommendation(spotify, userId)
+                                val success = recommendation.recommend(preferences, NEW_PLAYLIST_SIZE)
+                                complete(Response.json(success = success))
+                              }
+                            }
+                          }
+                        }
+                      } ~
+                      /*
+                       * POST /search
+                       * Get search result for given query.
+                       */
+                      path("search") {
+                        parameter("query".as[String]) { query =>
+                          pathEndOrSingleSlash {
+                            get {
+                              val types = "artist,track"
+                              val result = Search.query(spotify, userId, query, types, SEARCH_ITEM_LIMIT)
+                              complete(Response.success(data = result.toJson))
                             }
                           }
                         }
                       }
-                    } ~
-                    /*
-                     * POST /user/{udid}/search
-                     * Get search result for given query.
-                     */
-                    path("search") {
-                      parameter("query".as[String]) { query =>
-                        pathEndOrSingleSlash {
-                          get {
-                            val types = "artist,track"
-                            val result = Search.query(spotify, userId, query, types, SEARCH_ITEM_LIMIT)
-                            complete(Response.success(data = result.toJson))
-                          }
-                        }
-                      }
-                    }
+                  }
                 }
-
               }
-            }
           }
       }
     }

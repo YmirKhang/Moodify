@@ -1,6 +1,6 @@
 $(document).ready(function () {
-  const CLIENT_HOST = 'https://moodify.app';
-  const API_HOST = 'https://api.moodify.app';
+  const CLIENT_HOST = 'http://localhost:8000';
+  const API_HOST = 'http://localhost:9000';
   const LOGIN_PAGE = `${CLIENT_HOST}/login.html`;
   const udidKey = "moodify-udid";
   const spotifyIdKey = "moodify-spotifyId";
@@ -16,9 +16,9 @@ $(document).ready(function () {
   const historicalTrackCount = 15;
   const recentTrackCount = 3;
 
-  let historicTrendlineURL = `${API_HOST}/user/${udid}/trendline/${historicalTrackCount}?userId=${spotifyId}`;
-  let recentTrendlineURL = `${API_HOST}/user/${udid}/trendline/${recentTrackCount}?userId=${spotifyId}`;
-  let profileUrl = `${API_HOST}/user/${udid}/profile?userId=${spotifyId}`;
+  const minTempo = 50;
+  const maxTempo = 200;
+  const tempoStep = 15;
 
   $.logout = function () {
     localStorage.removeItem(udidKey);
@@ -29,8 +29,14 @@ $(document).ready(function () {
 
   $("#logout").click($.logout);
 
+  let profileEndpoint = `${API_HOST}/profile`;
+  let profileParams = {
+    udid: udid,
+    userId: spotifyId
+  };
+
   // Populate profile data.
-  $.get(profileUrl, function (response) {
+  $.get(profileEndpoint, profileParams, function (response) {
     let json = JSON.parse(response);
 
     let data = json.data;
@@ -126,8 +132,15 @@ $(document).ready(function () {
   $.populateTopArtistTracks = function (type, limit) {
     let terms = ["long", "medium", "short"];
     terms.forEach(function (term) {
-      let url = `${API_HOST}/user/${udid}/top-${type}s/${term}_term?userId=${spotifyId}`;
-      $.get(url, function (response) {
+      let topArtistTrackEndpoint = `${API_HOST}/top-${type}s`;
+      let timeRange = `${term}_term`;
+      let topArtistTrackParams = {
+        udid: udid,
+        userId: spotifyId,
+        timeRange: timeRange
+      };
+
+      $.get(topArtistTrackEndpoint, topArtistTrackParams, function (response) {
         let json = JSON.parse(response);
         let data = json.data.slice(0, limit);
         let divId = `#top-${type}-${term}-term`;
@@ -163,9 +176,15 @@ $(document).ready(function () {
     let input = searchBox.val();
     if (input.trim() != "") {
       searchResultBox.show();
-      let url = `${API_HOST}/user/${udid}/search?userId=${spotifyId}&query=${input}`;
+      let searchEndpoint = `${API_HOST}/search`;
+      let searchParams = {
+        udid: udid,
+        userId: spotifyId,
+        query: input
+      };
+
       jqxhr.abort();
-      jqxhr = $.get(url, function (response) {
+      jqxhr = $.get(searchEndpoint, searchParams, function (response) {
         let json = JSON.parse(response);
         let data = json.data;
         $.searchResultArtists = [];
@@ -254,8 +273,13 @@ $(document).ready(function () {
   }
 
   // Fill default artists data.
-  let defaultArtistsUrl = `${API_HOST}/user/${udid}/default-artists?userId=${spotifyId}`;
-  $.get(defaultArtistsUrl, function (response) {
+  let defaultArtistsEndpoint = `${API_HOST}/default-artists`;
+  let defaultArtistsParams = {
+    udid: udid,
+    userId: spotifyId
+  };
+
+  $.get(defaultArtistsEndpoint, defaultArtistsParams, function (response) {
     let json = JSON.parse(response);
     let data = json.data;
     data.forEach(function (item) {
@@ -291,6 +315,19 @@ $(document).ready(function () {
     return parseFloat($(`#range-${name}`).val());
   };
 
+  $.getAudioFeatureValueForTempo = function () {
+    let rawValue = $.getAudioFeatureValue("tempo");
+    var value = rawValue * (maxTempo - minTempo) + minTempo;
+
+    if (value < minTempo) {
+      value = minTempo;
+    } else if (value > maxTempo) {
+      value = maxTempo;
+    }
+
+    return value;
+  }
+
   $.getSeedIdList = function (type) {
     return $.seeds
       .filter((item) => item.itemType == type)
@@ -303,15 +340,14 @@ $(document).ready(function () {
     } else if ($.seeds.length > 5) {
       alert("You can specify at most five artists and tracks.");
     } else {
-      let url = `${API_HOST}/user/${udid}/recommendation?userId=${spotifyId}`;
+      let url = `${API_HOST}/recommendation?udid=${udid}&userId=${spotifyId}`;
       let data = {
         "seedArtistIdList": $.getSeedIdList("artist"),
         "seedTrackIdList": $.getSeedIdList("track"),
         "acousticness": $.getAudioFeatureValue("acousticness"),
         "instrumentalness": $.getAudioFeatureValue("instrumentalness"),
-        "speechiness": $.getAudioFeatureValue("speechiness"),
+        "tempo": $.getAudioFeatureValueForTempo(),
         "danceability": $.getAudioFeatureValue("danceability"),
-        "liveness": $.getAudioFeatureValue("liveness"),
         "energy": $.getAudioFeatureValue("energy"),
         "valence": $.getAudioFeatureValue("valence")
       };
@@ -338,8 +374,7 @@ $(document).ready(function () {
   var chart = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: ["Acousticness", "Instrumentalness", "Speechiness", "Danceability",
-        "Liveness", "Energy", "Valence"],
+      labels: ["Acousticness", "Instrumentalness", "Tempo", "Danceability", "Energy", "Valence"],
       datasets: [{
         label: 'Last Fifteen Songs',
         borderColor: 'rgba(170, 170, 170, 1)',
@@ -406,42 +441,77 @@ $(document).ready(function () {
     return result;
   }
 
+  $.getTempo = function (json) {
+    let rawValue = parseFloat(json["tempo"]);
+    let value = (rawValue - minTempo) / (maxTempo - minTempo) * 100;
+    var result = value.toFixed(0);
+
+    if (result < 0) {
+      result = 0;
+    } else if (result > 100) {
+      result = 100;
+    }
+    return result;
+  }
+
   $.drawChart = function (response, chartIndex) {
     let json = jQuery.parseJSON(response);
     let data = json.data;
     let acousticness = $.getField(data, "acousticness");
     let instrumentalness = $.getField(data, "instrumentalness");
-    let speechiness = $.getField(data, "speechiness");
+    let tempo = $.getTempo(data);
     let danceability = $.getField(data, "danceability");
-    let liveness = $.getField(data, "liveness");
     let energy = $.getField(data, "energy");
     let valence = $.getField(data, "valence");
 
-    chart.data.datasets[chartIndex].data = [acousticness, instrumentalness, speechiness,
-      danceability, liveness, energy, valence];
+    chart.data.datasets[chartIndex].data = [acousticness, instrumentalness, tempo,
+      danceability, energy, valence];
     chart.update();
   }
 
-  $.updateRangePosition = function (json, field) {
-    let value = parseFloat(json[field]).toFixed(1);
-    $(`#range-${field}`).val(value);
-  }
+  let trendlineEndpoint = `${API_HOST}/trendline`;
+
+  let historicTrendlineParams = {
+    udid: udid,
+    userId: spotifyId,
+    numTracks: historicalTrackCount
+  };
+
+  let recentTrendlineParams = {
+    udid: udid,
+    userId: spotifyId,
+    numTracks: recentTrackCount
+  };
 
   // Update the historical trendline chart.
-  $.get(historicTrendlineURL, function (response) {
+  $.get(trendlineEndpoint, historicTrendlineParams, function (response) {
     $.drawChart(response, 0);
   });
 
+  $.updateRangePosition = function (json, field) {
+    var value = parseFloat(json[field]).toFixed(1);
+
+    if (field == "tempo") {
+      value = (value - minTempo) / (maxTempo - minTempo);
+      if (value < 0) {
+        value = 0;
+      } else if (value > 1) {
+        value = 1;
+      }
+    }
+
+    $(`#range-${field}`).val(value);
+  }
+
   // Update the recent trendline chart.
-  $.get(recentTrendlineURL, function (response) {
+  $.get(trendlineEndpoint, recentTrendlineParams, function (response) {
     $.drawChart(response, 1);
     let json = jQuery.parseJSON(response);
     let data = json.data;
     $.updateRangePosition(data, "acousticness");
     $.updateRangePosition(data, "instrumentalness");
-    $.updateRangePosition(data, "speechiness");
+    $.updateRangePosition(data, "tempo");
     $.updateRangePosition(data, "danceability");
-    $.updateRangePosition(data, "liveness");
     $.updateRangePosition(data, "energy");
     $.updateRangePosition(data, "valence");
   });

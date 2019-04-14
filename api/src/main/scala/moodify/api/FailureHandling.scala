@@ -1,7 +1,7 @@
 package moodify.api
 
 import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.StatusCodes.{BadRequest, InternalServerError, NotFound}
+import akka.http.scaladsl.model.StatusCodes.{BadRequest, InternalServerError, NotFound, OK}
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.server.Directives.{complete, respondWithHeaders}
 import akka.http.scaladsl.server.{ExceptionHandler, MissingQueryParamRejection, RejectionHandler, ValidationRejection}
@@ -34,7 +34,7 @@ trait FailureHandling extends LazyLogging {
         case _ =>
           respondWithHeaders(headers) {
             complete(
-              (BadRequest, Response.error("Bad request."))
+              (OK, Response.error("Bad request."))
             )
           }
       }
