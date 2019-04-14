@@ -1,6 +1,6 @@
 $(document).ready(function () {
-  const CLIENT_HOST = 'https://moodify.app';
-  const API_HOST = 'https://api.moodify.app';
+  const CLIENT_HOST = window.location.host;
+  const API_HOST = '<insert_api_host>';
   const LOGIN_PAGE = `${CLIENT_HOST}/login.html`;
   const udidKey = "moodify-udid";
   const spotifyIdKey = "moodify-spotifyId";
@@ -9,7 +9,7 @@ $(document).ready(function () {
   let spotifyId = localStorage.getItem(spotifyIdKey);
 
   if (udid == null || spotifyId == null) {
-    window.location.replace(LOGIN_PAGE);
+    window.location.pathname = "login";
     return;
   }
 

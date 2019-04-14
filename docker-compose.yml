@@ -1,0 +1,33 @@
+version: "3"
+services:
+  moodifyapi:
+    build: api
+    restart: always
+    depends_on:
+      - moodifyredis
+    env_file:
+      - moodify.env
+    ports:
+      - 9000:9000
+  moodifyredis:
+    image: redis:5-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    hostname: redis
+    volumes:
+      - ./data/redis:/data
+    restart: always 
+    ports:
+      - 9001:6379
+  moodifyfrontend:
+    build: 
+      context: ./client
+      args:
+        - API_ADDRESS=http://localhost:9000
+        - SPOTIFY_CLIENT_ID=6377e901fc4443ba81ef46d6454f8f89
+    restart: always
+    env_file:
+      - moodify.env
+    depends_on:
+      - moodifyapi
+    ports:
+      - 8000:8000

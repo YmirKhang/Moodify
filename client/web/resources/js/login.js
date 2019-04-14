@@ -1,5 +1,5 @@
 $(document).ready(function () {
-  const CLIENT_HOST = 'https://moodify.app';
+  const CLIENT_HOST = window.location.origin;
   const udidKey = "moodify-udid";
   
   let udid = localStorage.getItem(udidKey);
@@ -17,7 +17,7 @@ $(document).ready(function () {
 
   $("#login-button").click(function () {
     let endpoint = "https://accounts.spotify.com/authorize";
-    let clientID = "9f0fe657fb2244b392b8f8dd5c6b89dc";
+    let clientID = "<spotify_client_id>";
     let redirectUri = `${CLIENT_HOST}/callback.html`;
     let scope = "user-read-recently-played,playlist-modify-public,user-top-read,user-read-private,ugc-image-upload";
 
